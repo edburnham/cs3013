@@ -2,7 +2,7 @@
 Author:				Ed Burnham, Mike Caldwell
 Date:				1/18/2017
 Version:			1
-Project ID:			Project 1 - Checkpiont
+Project ID:			Project 1
 CS Class:			CS 3013
 Programming Language:		C 
 OS/Hardware dependencies:	Uses Linux system calls
@@ -63,7 +63,6 @@ struct bgProcess bgProcesses[32];
 
 char commandsToPrint[32][128];//user added commands
 int commandIDs[32];//command IDs corresponding to the user added commands
-int ids[32];
 int filedes[2];
 int errdes[2];
 int bgpIndex;
@@ -114,8 +113,29 @@ void printStats() {//print statistics function
     lastTimeMin = usage.ru_minflt;
 }
 
+void processExit(int waitPid) {
+    char stdbuffer[4096];
+    char errbuffer[4096];
+    int bgIndex, i;
+    
+    for (i = 0; i < 32; i++) {
+         if (bgProcesses[i].pid == waitPid) {
+	    bgIndex = i;
+         }
+    }
+    
+    printf("-- Job Complete [%d] --\n", bgProcesses[bgIndex].bgid);
+    printf("Process ID: %d\n", bgProcesses[bgIndex].pid);
+    read(filedes[0], stdbuffer, sizeof(stdbuffer));
+    read(errdes[0], errbuffer, sizeof(errbuffer));
+    printf("%s\n", stdbuffer);
+    printf("%s\n", errbuffer);
+    gettimeofday(&stop, NULL);
+    printStats();
+}
+
 void userCommandExec(int commandIndex) {//executes user added command
-    int i, bgIndex, waitPid;
+    int i, waitPid;
     int tokens = 0;
     int tempIndex = 0;
 
@@ -123,8 +143,7 @@ void userCommandExec(int commandIndex) {//executes user added command
     char tempCommand2[33][128];
     char *args[33];//execvp needs a array of char*
 
-    strcpy(tempCommand[0],
-           commandsToPrint[commandIndex]);//make local copy of command to execute, accessed by command Index
+    strcpy(tempCommand[0], commandsToPrint[commandIndex]);//make local copy of command to execute, accessed by command Index
     tempCommand[0][127] = '\0';
 
     /*parse command into arg and command strings*/
@@ -138,101 +157,55 @@ void userCommandExec(int commandIndex) {//executes user added command
         }
     }
 
-
     if (!strncmp(args[tokens - 1], "&", 1)) { // if it's a background process, denoted by &
         bgpIndex++;
         args[tokens - 1] = NULL; // stripping off '\n' char
         pipe(errdes); // opening stderr pipe
         pipe(filedes); // opening stdout pipe
-
         gettimeofday(&start, NULL); //getting time
-        ids[numberOfCommands] = fork(); // forking, storing PID in ids
-
+        bgProcesses[commandIndex].pid = fork(); // forking, storing PID in ids
         bgProcesses[commandIndex].bgid = bgpIndex;
-        bgProcesses[commandIndex].pid = ids[numberOfCommands];
         bgProcesses[commandIndex].command = commandsToPrint[commandIndex];
 
-        if (ids[numberOfCommands] == 0) { // if CHILD
+        if (bgProcesses[commandIndex].pid == 0) { // if CHILD
             while ((dup2(filedes[1], STDOUT_FILENO) == -1)) {} // dup STDOUT filedescriptor to filedes array
             close(filedes[1]); // closing in child so it available to parent
             close(filedes[0]);
             while ((dup2(errdes[1], STDERR_FILENO) == -1)) {} // same for stderr
             close(errdes[1]);
             close(errdes[0]);
-
             execvp(args[0], args); // executing command in background
-        } else {//puts("in else");
+        } else {
             close(filedes[1]);
             close(errdes[1]);
             printf("-- Command: %s --\n", commandsToPrint[commandIndex]);
-            printf("[%d] %d\n\n", bgpIndex, ids[numberOfCommands]);
+            printf("[%d] %d\n\n", bgpIndex, bgProcesses[commandIndex].pid);
 
             while (1) {
                 waitPid = wait3(&status, WNOHANG, &usage);
                 if (waitPid > 0) { // may have to change it to ids[blah] == ...
-                    puts("in else &");
-                    for (i = 0; i < 32; i++) {
-                        if (bgProcesses[i].pid == waitPid) {
-                            bgIndex = i;
-                        }
-                    }
-                    printf("-- Job Complete [%d] --\n", bgProcesses[bgIndex].bgid);
-                    printf("Process ID: %d\n", bgProcesses[bgIndex].pid);
-                    char stdbuffer[4096];
-                    char errbuffer[4096];
-                    read(filedes[0], stdbuffer, sizeof(stdbuffer));
-                    read(errdes[0], errbuffer, sizeof(errbuffer));
-                    printf("%s\n", stdbuffer);
-                    printf("%s\n", errbuffer);
-                    gettimeofday(&stop, NULL);
-                    printStats();
-                    break;
-                } else {
+		  processExit(waitPid);
+                  break;
+		} else {
                     break;
                 }
-
-
-                /*
-                  if(ids[numberOfCommands] == wait3(&status, WNOHANG, &usage)){
-                      puts("inside exec &");
-                      char stdbuffer[4096];
-                      char errbuffer[4096];
-                      read(filedes[0],stdbuffer,sizeof(stdbuffer));
-                                          read(errdes[0],errbuffer,sizeof(errbuffer));
-                      printf("%s\n",stdbuffer);
-                      printf("%s\n",errbuffer);
-                      gettimeofday(&stop, NULL);
-                      printStats();
-                      break;
-                  }
-                  else {
-                    break;
-                    }*/
-
             }
         }
     } else {
         gettimeofday(&start, NULL); //getting time
-        ids[numberOfCommands] = fork();
-        if (ids[numberOfCommands] == 0) {
+        bgProcesses[commandIndex].pid = fork();
+        if (bgProcesses[commandIndex].pid == 0) {
             execvp(args[0], args);
         } else {
             close(filedes[1]);
             close(errdes[1]);
             printf("-- Command: %s --\n", commandsToPrint[commandIndex]);
-            printf("[%d] %d\n\n", bgpIndex, ids[numberOfCommands]);
+            printf("[%d] %d\n\n", bgpIndex, bgProcesses[commandIndex].pid);
             while (1) {
-                if (wait3(&status, 0, &usage) > 0) {
-                    puts("in else reg");
-                    char stdbuffer[4096];
-                    char errbuffer[4096];
-                    read(filedes[0], stdbuffer, sizeof(stdbuffer));
-                    read(errdes[0], errbuffer, sizeof(errbuffer));
-                    printf("%s\n", stdbuffer);
-                    printf("%s\n", errbuffer);
-                    gettimeofday(&stop, NULL);
-                    printStats();
-                    break;
+	      waitPid = wait3(&status, 0, &usage);
+                if (waitPid > 0) {
+                  processExit(waitPid);
+                  break;
 
                 }
             }
@@ -252,7 +225,7 @@ int main(int argc, char *argv[]) {
     int id = 3;
     int waitPid = 0;
     int addedCommandExists = 0;
-    int i, bgIndex;
+    int i;
 
     puts("===== Mid-Day Commander, v2 =====");
 
@@ -260,27 +233,15 @@ int main(int argc, char *argv[]) {
 
         waitPid = wait3(&status, WNOHANG, &usage);
         if (waitPid > 0) {
-            puts("in main");
-            for (i = 0; i < 32; i++) {
-                if (bgProcesses[i].pid == waitPid) {
-                    bgIndex = i;
-                }
-            }
-            printf("-- Job Complete [%d] --\n", bgProcesses[bgIndex].bgid);
-            printf("Process ID: %d\n", bgProcesses[bgIndex].pid);
-            char stdbuffer[4096];
-            char errbuffer[4096];
-            read(filedes[0], stdbuffer, sizeof(stdbuffer));
-            read(errdes[0], errbuffer, sizeof(errbuffer));
-            printf("%s\n", stdbuffer);
-            printf("%s\n", errbuffer);
-            gettimeofday(&stop, NULL);
-            printStats();
+            processExit(waitPid);
         } else {
             printOptions();
             check_EOF = fgets(input, sizeof(input), stdin);
-            input[strlen(input) - 1] = '\0';
-            if (!strncmp(input, "0", 1)) {//option 0
+	    input[strlen(input) - 1] = '\0';
+	    if (strlen(input) > 1) {//if the argument is greater than 2 long, then it doesn't exist
+	      fprintf(stderr, "\nYou have entered an incorrect option.\n");
+	    }
+            else if (!strncmp(input, "0", 1)) {//option 0
                 puts("");
                 puts("-- Who Am I? --");
                 gettimeofday(&start, NULL);
@@ -402,9 +363,7 @@ int main(int argc, char *argv[]) {
                     }
                 }
 
-                if (strlen(input) > 2) {//if the argument is greater than 2 long, then it doesn't exist
-                    fprintf(stderr, "You have entered an incorrect option.\n");
-                } else if (addedCommandExists) {
+                if (addedCommandExists) {
                     for (i = 0; i < 32; i++) {
                         if ((input[0] - '0') == commandIDs[i]) {//search for added command to execute
                             userCommandExec(i);//execute user added command using ID fro command
@@ -412,7 +371,7 @@ int main(int argc, char *argv[]) {
                     }
                     addedCommandExists = 0;
                 } else {
-                    fprintf(stderr, "You have entered an incorrect option.\n");
+                    fprintf(stderr, "\nYou have entered an incorrect option.\n");
                 }
 
             }
