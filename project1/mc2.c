@@ -126,8 +126,8 @@ void printStats() {//print statistics function
 }
 
 void processExit(int waitPid) {
-    char stdbuffer[4096];
-    char errbuffer[4096];
+    //char stdbuffer[8192];
+    //char errbuffer[8192];
     int bgIndex, i;
     
     for (i = 0; i < 32; i++) {
@@ -138,10 +138,10 @@ void processExit(int waitPid) {
     
     printf("-- Job Complete [%d] --\n", bgProcesses[bgIndex].bgid);
     printf("Process ID: %d\n", bgProcesses[bgIndex].pid);
-    read(filedes[0], stdbuffer, sizeof(stdbuffer));
-    read(errdes[0], errbuffer, sizeof(errbuffer));
-    printf("Output:\n%s\n", stdbuffer);
-    printf("Error:\n%s\n", errbuffer);
+    //read(filedes[0], stdbuffer, sizeof(stdbuffer));
+    //read(errdes[0], errbuffer, sizeof(errbuffer));
+    //printf("Output:\n%s\n", stdbuffer);
+    //printf("Error:\n%s\n", errbuffer);
     gettimeofday(&stop, NULL);
     printStats();
 }
@@ -175,24 +175,24 @@ void userCommandExec(int commandIndex) {//executes user added command
     if (!strncmp(args[tokens - 1], "&", 1)) { // if it's a background process, denoted by &
         bgpIndex++;
         args[tokens - 1] = NULL; // stripping off '\n' char
-        pipe(errdes); // opening stderr pipe
-        pipe(filedes); // opening stdout pipe
+        //pipe(errdes); // opening stderr pipe
+        //pipe(filedes); // opening stdout pipe
         gettimeofday(&start, NULL); //getting time
         bgProcesses[commandIndex].pid = fork(); // forking, storing PID in ids
         bgProcesses[commandIndex].bgid = bgpIndex;
         bgProcesses[commandIndex].command = commandsToPrint[commandIndex];
 
         if (bgProcesses[commandIndex].pid == 0) { // if CHILD
-            while ((dup2(filedes[1], STDOUT_FILENO) == -1)) {} // dup STDOUT filedescriptor to filedes array
+            /*while ((dup2(filedes[1], STDOUT_FILENO) == -1)) {} // dup STDOUT filedescriptor to filedes array
             close(filedes[1]); // closing in child so it available to parent
             close(filedes[0]);
             while ((dup2(errdes[1], STDERR_FILENO) == -1)) {} // same for stderr
             close(errdes[1]);
-            close(errdes[0]);
+            close(errdes[0]);*/
             execvp(args[0], args); // executing command in background
         } else {
-            close(filedes[1]);
-            close(errdes[1]);
+            /*close(filedes[1]);
+	      close(errdes[1]);*/
             printf("\n-- Command: %s --\n", commandsToPrint[commandIndex]);
             printf("[%d] %d\n\n", bgpIndex, bgProcesses[commandIndex].pid);
             while (1) {
