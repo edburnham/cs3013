@@ -75,7 +75,7 @@ void addCommandOrPrint(char *command, int addOrPrint) {//0 passed to addOrPrint 
   int i, j, k;                                          //1 passed to addOrPrint only adds the command to the list
 
     if(maxReached) {
-      k = 7;
+	k = 7; //maximum number of user added commands
     }
     else {
 
@@ -140,8 +140,8 @@ void processExit(int waitPid) {
     printf("Process ID: %d\n", bgProcesses[bgIndex].pid);
     read(filedes[0], stdbuffer, sizeof(stdbuffer));
     read(errdes[0], errbuffer, sizeof(errbuffer));
-    printf("%s\n", stdbuffer);
-    printf("%s\n", errbuffer);
+    printf("Output:\n%s\n", stdbuffer);
+    printf("Error:\n%s\n", errbuffer);
     gettimeofday(&stop, NULL);
     printStats();
 }
@@ -174,7 +174,6 @@ void userCommandExec(int commandIndex) {//executes user added command
     
     if (!strncmp(args[tokens - 1], "&", 1)) { // if it's a background process, denoted by &
         bgpIndex++;
-	printf("%d", bgpIndex);
         args[tokens - 1] = NULL; // stripping off '\n' char
         pipe(errdes); // opening stderr pipe
         pipe(filedes); // opening stdout pipe
