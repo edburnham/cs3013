@@ -206,7 +206,6 @@ void userCommandExec(int commandIndex) {//executes user added command
                 waitPid = wait3(&status, WNOHANG, &usage); // checking to see if bg process finished right away, storing pid so we can pass it
                 if (waitPid > 0) { // if it has finished
 		    processExit(waitPid); // exit gracefully
-		    break;
 		} else {
                     break;
                 }
@@ -222,8 +221,10 @@ void userCommandExec(int commandIndex) {//executes user added command
                 if (wait3(&status, 0, &usage) > 0) { // waiting to see if a processed finished, with hang
 		    gettimeofday(&stop, NULL); 
 		    printStats();
-		    break;
                 }
+		else {
+		    break;
+		}
             }
         }
     }
