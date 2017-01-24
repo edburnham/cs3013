@@ -66,16 +66,25 @@ int commandIDs[32];//command IDs corresponding to the user added commands
 int filedes[2];
 int errdes[2];
 int bgpIndex;
+int maxReached = 0;
 
 void addCommandOrPrint(char *command, int addOrPrint) {//0 passed to addOrPrint just prints the user added commands
-    int i, j;                                          //1 passed to addOrPrint only adds the command to the list
+  int i, j, k;                                          //1 passed to addOrPrint only adds the command to the list
 
+    if(maxReached) {
+      k = 7;
+    }
+    else {
+
+      k = (numberOfCommands + 1);
+    }
+      
     if (addOrPrint) {//add command
-        strncpy(commandsToPrint[numberOfCommands], command, 128);//copy the user added command to the list
-        commandIDs[numberOfCommands] = numberOfCommands + 3;
+      strncpy(commandsToPrint[numberOfCommands], command, 128);//copy the user added command to the list
+      commandIDs[numberOfCommands] = numberOfCommands + 3;
 
     } else {//don't add command just print them with IDs
-        for (i = 0; i < (numberOfCommands + 1); i++) {
+        for (i = 0; i < k; i++) {
             printf("   %d. ", commandIDs[i]);
             for (j = 0; commandsToPrint[i][j] != '\0'; j++) {
                 printf("%c", commandsToPrint[i][j]);
@@ -306,8 +315,13 @@ int main(int argc, char *argv[]) {
                     }
                 }
             } else if (!strncmp(input, "a", 1)) {//option a
-                puts("");
-                puts("-- Add a command --");
+	      if (id == 10) {
+		puts("You've reached the maximum number of user commands. New commands overwrite old ones. ");
+		id = 3;
+		numberOfCommands = -1;
+		maxReached = 1;
+	      }
+	        puts("-- Add a command --");
                 printf("Command to add?: ");
                 fgets(commandToAdd, sizeof(commandToAdd), stdin);
                 commandToAdd[strlen(commandToAdd) - 1] = '\0';
@@ -324,7 +338,6 @@ int main(int argc, char *argv[]) {
                 dirChange[strlen(dirChange) - 1] = '\0';
                 chdir(dirChange);
             } else if (!strncmp(input, "e", 1) || check_EOF == NULL) {//option e
-	      
 	      if(wait3(&status, WNOHANG, &usage) == 0){
 		puts("");
 		puts("Unable to log out, jobs not completed. Waiting...");
