@@ -44,6 +44,9 @@ Program Source:
 #include <ctype.h>
 #include <sys/wait.h>
 
+#define ARG_LIMIT 32
+#define ARG_LENGTH 128
+
 int numberOfCommands = -1;
 int lastTimeMaj = 0;
 int lastTimeMin = 0;
@@ -59,10 +62,10 @@ struct bgProcess {
     char *command;
 };
 
-struct bgProcess bgProcesses[32];
+struct bgProcess bgProcesses[ARG_LIMIT];
 
-char commandsToPrint[32][128];//user added commands
-int commandIDs[32];//command IDs corresponding to the user added commands
+char commandsToPrint[ARG_LIMIT][ARG_LENGTH];//user added commands
+int commandIDs[ARG_LIMIT];//command IDs corresponding to the user added commands
 int filedes[2];
 int errdes[2];
 int bgpIndex;
@@ -148,12 +151,15 @@ void userCommandExec(int commandIndex) {//executes user added command
     int tokens = 0;
     int tempIndex = 0;
 
-    char tempCommand[33][128];//temps for parsing and copying
-    char tempCommand2[33][128];
-    char *args[33];//execvp needs a array of char*
+    char tempCommand[ARG_LIMIT + 1][ARG_LENGTH];//temps for parsing and copying
+    char tempCommand2[ARG_LIMIT + 1][ARG_LENGTH];
+    char *args[ARG_LIMIT + 1] = {NULL};//execvp needs a array of char*
 
+	memset(tempCommand, 0, sizeof(tempCommand[0][0]) * (ARG_LIMIT + 1) * ARG_LENGTH);
+	memset(tempCommand2, 0, sizeof(tempCommand2[0][0]) * (ARG_LIMIT + 1) * ARG_LENGTH);
+	
     strcpy(tempCommand[0], commandsToPrint[commandIndex]);//make local copy of command to execute, accessed by command Index
-    tempCommand[0][127] = '\0';
+    tempCommand[0][ARG_LENGTH - 1] = '\0';
 
     /*parse command into arg and command strings*/
     for (i = 0; i < strlen(tempCommand[0]) + 1; i++) {
@@ -165,7 +171,7 @@ void userCommandExec(int commandIndex) {//executes user added command
             tempCommand2[tokens][i - tempIndex] = tempCommand[0][i];//copy character by character
         }
     }
-
+    
     if (!strncmp(args[tokens - 1], "&", 1)) { // if it's a background process, denoted by &
         bgpIndex++;
         args[tokens - 1] = NULL; // stripping off '\n' char
