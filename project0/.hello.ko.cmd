@@ -1,1 +1,0 @@
-cmd_/home/ehburnham/cs3013/project0/hello.ko := ld -r -m elf_i386 -T ./scripts/module-common.lds --build-id  -o /home/ehburnham/cs3013/project0/hello.ko /home/ehburnham/cs3013/project0/hello.o /home/ehburnham/cs3013/project0/hello.mod.o
