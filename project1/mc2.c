@@ -98,7 +98,7 @@ void addCommandOrPrint(char *command, int addOrPrint) {//0 passed to addOrPrint 
 }
 
 void printOptions() {//print menu function
-    puts("G'day, Commander! What command would would you like to run");
+    puts("G'day, Commander! What command would would you like to run?");
     puts("   0. whoami   : Prints out the result of the whoami command");
     puts("   1. last     : Prints out the results of the last command");
     puts("   2. ls       : Prints out the result of a listing on a user specified path");
@@ -174,6 +174,7 @@ void userCommandExec(int commandIndex) {//executes user added command
     
     if (!strncmp(args[tokens - 1], "&", 1)) { // if it's a background process, denoted by &
         bgpIndex++;
+	printf("%d", bgpIndex);
         args[tokens - 1] = NULL; // stripping off '\n' char
         pipe(errdes); // opening stderr pipe
         pipe(filedes); // opening stdout pipe
@@ -193,7 +194,7 @@ void userCommandExec(int commandIndex) {//executes user added command
         } else {
             close(filedes[1]);
             close(errdes[1]);
-            printf("-- Command: %s --\n", commandsToPrint[commandIndex]);
+            printf("\n-- Command: %s --\n", commandsToPrint[commandIndex]);
             printf("[%d] %d\n\n", bgpIndex, bgProcesses[commandIndex].pid);
             while (1) {
                 waitPid = wait3(&status, WNOHANG, &usage);
@@ -207,12 +208,10 @@ void userCommandExec(int commandIndex) {//executes user added command
         }
     } else {
         gettimeofday(&start, NULL); //getting time
-        bgProcesses[commandIndex].pid = fork();
-        if (bgProcesses[commandIndex].pid == 0) {
+        if (fork() == 0) {
 	    execvp(args[0], args);
         } else {
-            printf("-- Command: %s --\n", commandsToPrint[commandIndex]);
-            printf("[%d] %d\n\n", bgpIndex, bgProcesses[commandIndex].pid);
+            printf("\n-- Command: %s --\n", commandsToPrint[commandIndex]);            
             while (1) {
                 if (wait3(&status, 0, &usage) > 0) {
                   gettimeofday(&stop, NULL);
@@ -249,7 +248,7 @@ int main(int argc, char *argv[]) {
             check_EOF = fgets(input, sizeof(input), stdin);
 	    input[strlen(input) - 1] = '\0';
 	    if (strlen(input) > 1) {//if the argument is greater than 2 long, then it doesn't exist
-	      fprintf(stderr, "\nYou have entered an incorrect option.\n");
+	      fprintf(stderr, "\nYou have entered an incorrect option.\n\n");
 	    }
             else if (!strncmp(input, "0", 1)) {//option 0
                 puts("");
@@ -327,7 +326,8 @@ int main(int argc, char *argv[]) {
 		numberOfCommands = -1;
 		maxReached = 1;
 	      }
-	        puts("-- Add a command --");
+	      puts("");
+	      puts("-- Add a command --");
                 printf("Command to add?: ");
                 fgets(commandToAdd, sizeof(commandToAdd), stdin);
                 commandToAdd[strlen(commandToAdd) - 1] = '\0';
@@ -386,7 +386,7 @@ int main(int argc, char *argv[]) {
                     }
                     addedCommandExists = 0;
                 } else {
-                    fprintf(stderr, "\nYou have entered an incorrect option.\n");
+                    fprintf(stderr, "\nYou have entered an incorrect option.\n\n");
                 }
 
             }
