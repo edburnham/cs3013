@@ -180,7 +180,6 @@ void userCommandExec(int commandIndex) {//executes user added command
             close(errdes[1]);
             printf("-- Command: %s --\n", commandsToPrint[commandIndex]);
             printf("[%d] %d\n\n", bgpIndex, bgProcesses[commandIndex].pid);
-
             while (1) {
                 waitPid = wait3(&status, WNOHANG, &usage);
                 if (waitPid > 0) { // may have to change it to ids[blah] == ...
@@ -332,9 +331,12 @@ int main(int argc, char *argv[]) {
                 dirChange[strlen(dirChange) - 1] = '\0';
                 chdir(dirChange);
             } else if (!strncmp(input, "e", 1) || check_EOF == NULL) {//option e
-                if(wait3(&status, WNOHANG, &usage) == 0){
-                    puts("Unable to log out, jobs not completed. Waiting...");
-                    wait(NULL);
+	      
+	      if(wait3(&status, WNOHANG, &usage) == 0){
+                puts("Unable to log out, jobs not completed. Waiting...");
+                for(i = 0; i < numberOfCommands + 1; i++){
+                    processExit(wait4(bgProcesses[i].pid, &status, WNOHANG, &usage));
+                  }
                 }
                 puts("Logging you out, Commander.");
                 exit(0);
@@ -356,8 +358,7 @@ int main(int argc, char *argv[]) {
                     puts("");
                 }
             } else {
-                for (i = 0; i <
-                            32; i++) {//check if added command exists before dismissing it as not.The user added command is also executed from here
+                for (i = 0; i < 32; i++) {//check if added command exists before dismissing it as not.The user added command is also executed from here
                     if ((input[0] - '0') == commandIDs[i]) {
                         addedCommandExists = 1;
                     }
