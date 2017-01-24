@@ -194,18 +194,15 @@ void userCommandExec(int commandIndex) {//executes user added command
         gettimeofday(&start, NULL); //getting time
         bgProcesses[commandIndex].pid = fork();
         if (bgProcesses[commandIndex].pid == 0) {
-            execvp(args[0], args);
+	    execvp(args[0], args);
         } else {
-            close(filedes[1]);
-            close(errdes[1]);
             printf("-- Command: %s --\n", commandsToPrint[commandIndex]);
             printf("[%d] %d\n\n", bgpIndex, bgProcesses[commandIndex].pid);
             while (1) {
-	      waitPid = wait3(&status, 0, &usage);
-                if (waitPid > 0) {
-                  processExit(waitPid);
+                if (wait3(&status, 0, &usage) > 0) {
+                  gettimeofday(&stop, NULL);
+                  printStats();
                   break;
-
                 }
             }
         }
@@ -220,7 +217,6 @@ int main(int argc, char *argv[]) {
     char dirChange[128];
     char commandToAdd[32];
     char *check_EOF;
-
     int id = 3;
     int waitPid = 0;
     int addedCommandExists = 0;
@@ -258,13 +254,11 @@ int main(int argc, char *argv[]) {
             } else if (!strncmp(input, "2", 1)) {//option 2
                 puts("");
                 puts("-- Directory Listing --");
-
                 printf("Arguments?: ");
                 fgets(inarg, sizeof(inarg), stdin);
-
                 printf("Path?: ");
                 fgets(inpath, sizeof(inpath), stdin);
-
+				
                 if ((inarg[0] == '\n') && (inpath[0] != '\n')) {
                     inpath[strlen(inpath) - 1] = '\0';
                     gettimeofday(&start, NULL);
@@ -325,7 +319,6 @@ int main(int argc, char *argv[]) {
             } else if (!strncmp(input, "c", 1)) {//option c
                 puts("");
                 puts("-- Change Directory --");
-
                 printf("New Directory?: ");
                 fgets(dirChange, sizeof(dirChange), stdin);
                 dirChange[strlen(dirChange) - 1] = '\0';
@@ -333,11 +326,13 @@ int main(int argc, char *argv[]) {
             } else if (!strncmp(input, "e", 1) || check_EOF == NULL) {//option e
 	      
 	      if(wait3(&status, WNOHANG, &usage) == 0){
-                puts("Unable to log out, jobs not completed. Waiting...");
+		puts("");
+		puts("Unable to log out, jobs not completed. Waiting...");
                 for(i = 0; i < numberOfCommands + 1; i++){
                     processExit(wait4(bgProcesses[i].pid, &status, WNOHANG, &usage));
                   }
                 }
+	        puts("");
                 puts("Logging you out, Commander.");
                 exit(0);
             } else if (!strncmp(input, "p", 1)) {//option p
@@ -346,7 +341,7 @@ int main(int argc, char *argv[]) {
                 puts("-- Current Directory --");
                 printf("Directory: ");
                 getcwd(pwd, sizeof(pwd));
-                printf("%s\n\n", pwd);
+                printf("%s\n", pwd);
             } else if (!strncmp(input, "r", 1)) {//option p
                 puts("");
                 puts("-- Background Processes --");
