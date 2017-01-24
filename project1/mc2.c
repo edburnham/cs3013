@@ -138,6 +138,28 @@ void processExit(int waitPid) {
     }
 }
 
+int checkLength(char* command){
+	int count = 0;
+	int i;
+	
+	if(strlen(command) >= 128){
+		return 0;
+	}
+	
+	for (i = 0; i < strlen(command) + 1; i++) {
+		if (command[i] == ' ') {
+		    count++;
+		}
+    }
+    
+    if(count > 32){
+     	return 0;
+    }
+    else{
+    	return 1;
+    }
+}
+
 void userCommandExec(int commandIndex) {//executes user added command
     int i, waitPid;
     int tokens = 0;
@@ -212,7 +234,7 @@ int main(int argc, char *argv[]) {
     char inpath[128]; // path input buffer for ls command
     char inarg[128]; // arguement input buffer for ls command
     char dirChange[128]; // input buffer for chdir command
-    char commandToAdd[32]; // string of the user added command
+    char commandToAdd[128]; // string of the user added command
     char *check_EOF; // checking EOF when files are passed as input
     int id = 3; // id for tracking user added command menu placement locally
     int waitPid = 0; // PID returned from wait3 command
@@ -310,16 +332,24 @@ int main(int argc, char *argv[]) {
 		    numberOfCommands = -1;
 		    maxReached = 1; // flag for maximum reached
 		}
-		puts("");
-		puts("-- Add a command --");
-                printf("Command to add?: ");
-                fgets(commandToAdd, sizeof(commandToAdd), stdin); // get command to add from user
-                commandToAdd[strlen(commandToAdd) - 1] = '\0'; // stripping newline
-                numberOfCommands++; // increment command tracking variable
-                addCommandOrPrint(commandToAdd, 1); // add the command to the list in the future
-                printf("Okay, added with ID %d.\n", id);
-                puts("");
-                id++; // local id tracking variable incremented
+		
+		while(1){
+			puts("");
+			puts("-- Add a command --");
+		        printf("Command to add?: ");
+		        fgets(commandToAdd, sizeof(commandToAdd), stdin); // get command to add from user
+		        commandToAdd[strlen(commandToAdd) - 1] = '\0'; // stripping newline
+		        if(checkLength(commandToAdd)){
+		        	numberOfCommands++; // increment command tracking variable
+				addCommandOrPrint(commandToAdd, 1); // add the command to the list in the future
+				printf("Okay, added with ID %d.\n", id);
+				puts("");
+				id++; // local id tracking variable incremented
+				break;
+		        }else{
+		        	puts("Only 32 arguments allowed and 128 charcaters or less.");
+		        }
+		}
             } else if (!strncmp(input, "c", 1)) {//option c
                 puts("");
                 puts("-- Change Directory --");
