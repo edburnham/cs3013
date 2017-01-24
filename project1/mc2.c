@@ -50,9 +50,11 @@ Program Source:
 int numberOfCommands = -1;
 int lastTimeMaj = 0;
 int lastTimeMin = 0;
-int status;
+int status = 0;
+int bgpIndex = 0;
+int maxReached = 0;
 
-double wall_milli;
+double wall_milli = 0;
 
 struct timeval start, stop;
 struct rusage usage;
@@ -60,16 +62,13 @@ struct bgProcess {
     int bgid;
     int pid;
     char *command;
+    int running;
 };
 
 struct bgProcess bgProcesses[ARG_LIMIT];
 
 char commandsToPrint[ARG_LIMIT][ARG_LENGTH];//user added commands
 int commandIDs[ARG_LIMIT];//command IDs corresponding to the user added commands
-int filedes[2];
-int errdes[2];
-int bgpIndex;
-int maxReached = 0;
 
 void addCommandOrPrint(char *command, int addOrPrint) {//0 passed to addOrPrint just prints the user added commands
   int i, j, k;                                          //1 passed to addOrPrint only adds the command to the list
@@ -126,8 +125,6 @@ void printStats() {//print statistics function
 }
 
 void processExit(int waitPid) {
-    //char stdbuffer[8192];
-    //char errbuffer[8192];
     int bgIndex, i;
     
     for (i = 0; i < 32; i++) {
@@ -138,10 +135,7 @@ void processExit(int waitPid) {
     
     printf("-- Job Complete [%d] --\n", bgProcesses[bgIndex].bgid);
     printf("Process ID: %d\n", bgProcesses[bgIndex].pid);
-    //read(filedes[0], stdbuffer, sizeof(stdbuffer));
-    //read(errdes[0], errbuffer, sizeof(errbuffer));
-    //printf("Output:\n%s\n", stdbuffer);
-    //printf("Error:\n%s\n", errbuffer);
+    bgProcesses[bgIndex].running = 0;
     gettimeofday(&stop, NULL);
     printStats();
 }
@@ -155,8 +149,8 @@ void userCommandExec(int commandIndex) {//executes user added command
     char tempCommand2[ARG_LIMIT + 1][ARG_LENGTH];
     char *args[ARG_LIMIT + 1] = {NULL};//execvp needs a array of char*
 
-	memset(tempCommand, 0, sizeof(tempCommand[0][0]) * (ARG_LIMIT + 1) * ARG_LENGTH);
-	memset(tempCommand2, 0, sizeof(tempCommand2[0][0]) * (ARG_LIMIT + 1) * ARG_LENGTH);
+    memset(tempCommand, 0, sizeof(tempCommand[0][0]) * (ARG_LIMIT + 1) * ARG_LENGTH);
+    memset(tempCommand2, 0, sizeof(tempCommand2[0][0]) * (ARG_LIMIT + 1) * ARG_LENGTH);
 	
     strcpy(tempCommand[0], commandsToPrint[commandIndex]);//make local copy of command to execute, accessed by command Index
     tempCommand[0][ARG_LENGTH - 1] = '\0';
@@ -175,26 +169,17 @@ void userCommandExec(int commandIndex) {//executes user added command
     if (!strncmp(args[tokens - 1], "&", 1)) { // if it's a background process, denoted by &
         bgpIndex++;
         args[tokens - 1] = NULL; // stripping off '\n' char
-        //pipe(errdes); // opening stderr pipe
-        //pipe(filedes); // opening stdout pipe
         gettimeofday(&start, NULL); //getting time
-        bgProcesses[commandIndex].pid = fork(); // forking, storing PID in ids
-        bgProcesses[commandIndex].bgid = bgpIndex;
-        bgProcesses[commandIndex].command = commandsToPrint[commandIndex];
-
-        if (bgProcesses[commandIndex].pid == 0) { // if CHILD
-            /*while ((dup2(filedes[1], STDOUT_FILENO) == -1)) {} // dup STDOUT filedescriptor to filedes array
-            close(filedes[1]); // closing in child so it available to parent
-            close(filedes[0]);
-            while ((dup2(errdes[1], STDERR_FILENO) == -1)) {} // same for stderr
-            close(errdes[1]);
-            close(errdes[0]);*/
+        bgProcesses[bgpIndex].pid = fork(); // forking, storing PID in ids
+        bgProcesses[bgpIndex].bgid = bgpIndex;
+        bgProcesses[bgpIndex].command = commandsToPrint[commandIndex];
+	bgProcesses[bgpIndex].running = 1;
+	
+        if (bgProcesses[bgpIndex].pid == 0) { // if CHILD
             execvp(args[0], args); // executing command in background
         } else {
-            /*close(filedes[1]);
-	      close(errdes[1]);*/
             printf("\n-- Command: %s --\n", commandsToPrint[commandIndex]);
-            printf("[%d] %d\n\n", bgpIndex, bgProcesses[commandIndex].pid);
+            printf("[%d] %d\n\n", bgpIndex, bgProcesses[bgpIndex].pid);
             while (1) {
                 waitPid = wait3(&status, WNOHANG, &usage);
                 if (waitPid > 0) { // may have to change it to ids[blah] == ...
@@ -234,7 +219,7 @@ int main(int argc, char *argv[]) {
     int waitPid = 0;
     int addedCommandExists = 0;
     int i;
-
+    
     puts("===== Mid-Day Commander, v2 =====");
 
     while (1) {
@@ -244,12 +229,12 @@ int main(int argc, char *argv[]) {
             processExit(waitPid);
         } else {
             printOptions();
-            check_EOF = fgets(input, sizeof(input), stdin);
+	    check_EOF = fgets(input, sizeof(input), stdin);
 	    input[strlen(input) - 1] = '\0';
 	    if (strlen(input) > 1) {//if the argument is greater than 2 long, then it doesn't exist
 	      fprintf(stderr, "\nYou have entered an incorrect option.\n\n");
 	    }
-            else if (!strncmp(input, "0", 1)) {//option 0
+	    else if (!strncmp(input, "0", 1)) {//option 0
                 puts("");
                 puts("-- Who Am I? --");
                 gettimeofday(&start, NULL);
@@ -264,6 +249,7 @@ int main(int argc, char *argv[]) {
                 system("last");
                 gettimeofday(&stop, NULL);
                 printStats();
+		
             } else if (!strncmp(input, "2", 1)) {//option 2
                 puts("");
                 puts("-- Directory Listing --");
@@ -363,13 +349,11 @@ int main(int argc, char *argv[]) {
             } else if (!strncmp(input, "r", 1)) {//option p
                 puts("");
                 puts("-- Background Processes --");
-                if (fork() == 0) {
-                    puts("");
-                    execl("/bin/ps", "ps", "-e", (char *) NULL);
-                } else {
-                    wait(NULL);
-                    puts("");
-                }
+                for (i = 0; i < bgpIndex; i++) {
+		    if (bgProcesses[i].running == 1) {
+			printf("\n[%d] %d %s\n", bgProcesses[i].bgid, bgProcesses[i].pid, bgProcesses[i].command);
+		    }
+		}    
             } else {
                 for (i = 0; i < 32; i++) {//check if added command exists before dismissing it as not.The user added command is also executed from here
                     if ((input[0] - '0') == commandIDs[i]) {
