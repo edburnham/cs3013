@@ -43,6 +43,7 @@ int numberOfCommands = -1;
 int lastTimeMaj = 0;  // ints for storing cumulative time of children
 int lastTimeMin = 0;
 int maxReached = 0;
+int status = 0;
 
 double wall_milli = 0; // wall clock timer
 
@@ -106,34 +107,33 @@ void printStats() {//print statistics function
 
 void userCommandExec(int commandIndex){
     int i;
-    int put = 0;
-    int status;
-    int temp = 0;
+    int tokens = 0;
+    int tempIndex = 0;
+
+    char tempCommand[ARG_LIMIT + 1][ARG_LENGTH];//temps for parsing and copying
+    char tempCommand2[ARG_LIMIT + 1][ARG_LENGTH];
+    char *args[ARG_LIMIT + 1] = {NULL};//execvp needs a array of char*
+
+    memset(tempCommand, 0, sizeof(tempCommand[0][0]) * (ARG_LIMIT + 1) * ARG_LENGTH); // Initializing temporary arrays
+    memset(tempCommand2, 0, sizeof(tempCommand2[0][0]) * (ARG_LIMIT + 1) * ARG_LENGTH);
 	
-    char parsedCommand[32][128];
-    char tempCommand[32][128];
-    char tempCommand2[32][128];
-    char* args[] = {parsedCommand[1], NULL};
-	
-    strcpy(tempCommand[0], commandsToPrint[commandIndex]); //make local copy of command to execute, accessed by command Index
-    tempCommand[0][127] = '\0';	
-	
+    strcpy(tempCommand[0], commandsToPrint[commandIndex]);//make local copy of command to execute, accessed by command Index
+    tempCommand[0][ARG_LENGTH - 1] = '\0'; 
+
     /*parse command into arg and command strings*/
-    for(i = 0; i < strlen(tempCommand[0]) + 1; i++){
-	if((tempCommand[0][i] == ' ') || (tempCommand[0][i] == '\0')){
-	    strcpy(parsedCommand[put], tempCommand2[put]);//parsed command holds command and args
-	    temp += i;
-	    temp++;
-	    put++;
-	}
-	else{
-	    tempCommand2[put][i - temp] = tempCommand[0][i];//copy character by character
-	}
+    for (i = 0; i < strlen(tempCommand[0]) + 1; i++) {
+        if ((tempCommand[0][i] == ' ') || (tempCommand[0][i] == '\0')) {
+            args[tokens] = strdup(tempCommand2[tokens]);//parsed command holds command and args
+            tempIndex = i + 1;//keeping track of i so the next array fills from element zero
+            tokens++;//move to the next string in array if strings
+        } else {
+            tempCommand2[tokens][i - tempIndex] = tempCommand[0][i];//copy character by character
+        }
     }
-	      	   	
+    args[tokens - 1] = NULL; // stripping off '\n' char      	   	
     gettimeofday(&start, NULL); //getting time
     if (fork() == 0) { // if CHILD
-	execvp(parsedCommand[0], args);// executing command in background
+	execvp(args[0], args);// executing command in background
     }
     else { // in PARENT
 	wait(&status); // wait for child
