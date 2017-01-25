@@ -145,8 +145,6 @@ void userCommandExec(int commandIndex){
 int checkLength(char* command){ // checking for erroneous input 
     int count = 0;
     int i;
-    puts("HERE");
-    printf("%d\n",strlen(command));
     for (i = 0; i < strlen(command) + 1; i++) { // counting spaces
 	if (command[i] == ' ') {
 	    count++;
@@ -276,7 +274,6 @@ int main(int argc, char *argv[]){
 	    printf("Command to add?: ");
 	    fgets(commandToAdd, sizeof(commandToAdd), stdin); // get command to add from user
 	    commandToAdd[strlen(commandToAdd) - 1] = '\0'; // stripping newline
-	    printf("out:%d\n",strlen(commandToAdd));
 	    if(checkLength(commandToAdd)){ // making sure user input comforms to expectations
 		numberOfCommands++; // increment command tracking variable
 		addCommandOrPrint(commandToAdd, 1); // add the command to the list in the future
