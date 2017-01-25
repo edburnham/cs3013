@@ -333,6 +333,7 @@ int main(int argc, char *argv[]) {
 		    id = 3; // reseting local tracking variables
 		    numberOfCommands = -1;
 		    maxReached = 1; // flag for maximum reached
+		    puts("");
 		}
 		
 		while(1){
@@ -350,7 +351,8 @@ int main(int argc, char *argv[]) {
 				break;
 		        }else{
 		        	puts("Only 32 arguments allowed and 128 charcaters or less.");
-		        }
+				puts("");
+			}
 		}
             } else if (!strncmp(input, "c", 1)) {//option c
                 puts("");
@@ -358,7 +360,8 @@ int main(int argc, char *argv[]) {
                 printf("New Directory?: ");
                 fgets(dirChange, sizeof(dirChange), stdin); // get user input, strip newline
                 dirChange[strlen(dirChange) - 1] = '\0';
-                chdir(dirChange); 
+                chdir(dirChange);
+		puts("");
             } else if (!strncmp(input, "e", 1) || check_EOF == NULL) {//option e
 		waitPid = wait3(&status, WNOHANG, &usage); // checking for waiting process, if so get its pid 
 		if(waitPid == 0){  // if not...
@@ -379,8 +382,9 @@ int main(int argc, char *argv[]) {
                 puts("");
                 puts("-- Current Directory --");
                 printf("Directory: ");
-                getcwd(pwd, sizeof(pwd));
+		getcwd(pwd, sizeof(pwd));
                 printf("%s\n", pwd);
+		puts("");
             } else if (!strncmp(input, "r", 1)) {//option p
                 puts("");
                 puts("-- Background Processes --");
@@ -405,7 +409,7 @@ int main(int argc, char *argv[]) {
                     }
                     addedCommandExists = 0; // flip flag if command does not exist
                 } else {
-                    fprintf(stderr, "\nYou have entered an incorrect option.\n\n"); // You are the weakest link.
+                    fprintf(stderr, "\nYou have entered an incorrect option.\n"); // You are the weakest link.
 		    puts("");
 		}
 
