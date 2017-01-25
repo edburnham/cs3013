@@ -1,31 +1,31 @@
 /*
-Author:				Ed Burnham, Mike Caldwell
-Date:				1/16/2017 - 1/24/2017
-Version:			2
-Project ID:			Project 1
-CS Class:			CS 3013
-Programming Language:		C 
-OS/Hardware dependencies:	Uses Linux system calls
+  Author:				Ed Burnham, Mike Caldwell
+  Date:				1/16/2017 - 1/24/2017
+  Version:			2
+  Project ID:			Project 1
+  CS Class:			CS 3013
+  Programming Language:		C 
+  OS/Hardware dependencies:	Uses Linux system calls
 
-Problem Description:		Midday Commander - text based system interaction
+  Problem Description:		Midday Commander - text based system interaction
 
-Overall Design:			
-	System structure	The program has a flat structure with a main function and a few small functions called from main
-	Data representation	most data is represented in primitive variable types. there is a struct to contain the information for bg processes
-	Algorithms 		The program makes no use of any algorithms worth mentioning
+  Overall Design:			
+  System structure	The program has a flat structure with a main function and a few small functions called from main
+  Data representation	most data is represented in primitive variable types. there is a struct to contain the information for bg processes
+  Algorithms 		The program makes no use of any algorithms worth mentioning
 
-Program Assumptions 
-      and Restrictions:		There are limits on user input, details available in README
+  Program Assumptions 
+  and Restrictions:		There are limits on user input, details available in README
 
-Interfaces:			system calls, stdin, stderr, stdout
+  Interfaces:			system calls, stdin, stderr, stdout
 
-Implementation Details:
-	Data			Struct named bgProcesses contains information for background processes	        
-	Functions	        Use of fork(), exec() and wait() functions for process control
+  Implementation Details:
+  Data			Struct named bgProcesses contains information for background processes	        
+  Functions	        Use of fork(), exec() and wait() functions for process control
 
-How to build the program:	make all
+  How to build the program:	make all
 
-Program Source:	
+  Program Source:	
 */
 
 #include <stdio.h>
@@ -76,8 +76,8 @@ void addCommandOrPrint(char *command, int addOrPrint) {//0 passed to addOrPrint 
     }
       
     if (addOrPrint) {//add command
-      strncpy(commandsToPrint[numberOfCommands], command, 128);//copy the user added command to the list
-      commandIDs[numberOfCommands] = numberOfCommands + 3;  // Offset of 3 between number of commands and list position
+	strncpy(commandsToPrint[numberOfCommands], command, 128);//copy the user added command to the list
+	commandIDs[numberOfCommands] = numberOfCommands + 3;  // Offset of 3 between number of commands and list position
 
     } else {//don't add command just print them with IDs
         for (i = 0; i < k; i++) {
@@ -179,7 +179,7 @@ void userCommandExec(int commandIndex) {//executes user added command
     for (i = 0; i < strlen(tempCommand[0]) + 1; i++) {
         if ((tempCommand[0][i] == ' ') || (tempCommand[0][i] == '\0')) {
             args[tokens] = strdup(tempCommand2[tokens]);//parsed command holds command and args
-            tempIndex = i + 1;//kepping track of i so the next array fills from element zero
+            tempIndex = i + 1;//keeping track of i so the next array fills from element zero
             tokens++;//move to the next string in array if strings
         } else {
             tempCommand2[tokens][i - tempIndex] = tempCommand[0][i];//copy character by character
@@ -233,10 +233,10 @@ void userCommandExec(int commandIndex) {//executes user added command
 }
 
 int main(int argc, char *argv[]) {
-    char input[128]; // input buffer
-    char inpath[128]; // path input buffer for ls command
-    char inarg[128]; // arguement input buffer for ls command
-    char dirChange[128]; // input buffer for chdir command
+    char input[129]; // input buffer
+    char inpath[129]; // path input buffer for ls command
+    char inarg[129]; // arguement input buffer for ls command
+    char dirChange[129]; // input buffer for chdir command
     char commandToAdd[129]; // string of the user added command
     char *check_EOF; // checking EOF when files are passed as input
     int id = 3; // id for tracking user added command menu placement locally
@@ -255,7 +255,7 @@ int main(int argc, char *argv[]) {
             printOptions(); 
 	    check_EOF = fgets(input, sizeof(input), stdin); // get user input from stdin
 	    input[strlen(input) - 1] = '\0'; // stip newline char
-	    if (strlen(input) > 1) {//if the argument is greater than 2 long, then it doesn't exist
+	    if (strlen(input) > 1) {//if the argument is greater than 1 long, then it doesn't exist
 		fprintf(stderr, "\nYou have entered an incorrect option.\n\n");
 	    }
 	    else if (!strncmp(input, "0", 1)) {//option 0
@@ -279,56 +279,63 @@ int main(int argc, char *argv[]) {
                 puts("-- Directory Listing --");
                 printf("Arguments?: ");
                 fgets(inarg, sizeof(inarg), stdin);
+		
                 printf("Path?: ");
                 fgets(inpath, sizeof(inpath), stdin);
-				
-                if ((inarg[0] == '\n') && (inpath[0] != '\n')) { // handling special cases like no path or no arg input for ls
-                    inpath[strlen(inpath) - 1] = '\0';
-                    gettimeofday(&start, NULL);
-                    if (fork() == 0) {
-                        puts("");
-                        execl("/bin/ls", "ls", inpath, (char *) NULL);
-                    } else {
-                        wait(NULL);
-                        gettimeofday(&stop, NULL);
-                        printStats();
-                    }
-                } else if ((inarg[0] != '\n') && (inpath[0] == '\n')) {
-                    inarg[strlen(inarg) - 1] = '\0';
-                    gettimeofday(&start, NULL);
-                    if (fork() == 0) {
-                        puts("");
-                        execl("/bin/ls", "ls", inarg, (char *) NULL);
-                    } else {
-                        wait(NULL);
-                        gettimeofday(&stop, NULL);
-                        printStats();
-                    }
-                } else if (inarg[0] == '\n' && inpath[0] == '\n') {
-                    gettimeofday(&start, NULL);
-                    if (fork() == 0) {
-                        puts("");
-                        execl("/bin/ls", "ls", (char *) NULL);
-                    } else {
-                        wait(NULL);
-                        gettimeofday(&stop, NULL);
-                        printStats();
-                    }
-                } else { // last of the special cases for ls command input
-                    inarg[strlen(inarg) - 1] = '\0';
-                    inpath[strlen(inpath) - 1] = '\0';
+		if (checkLength(inpath) && checkLength(inarg)) {		
+		    if ((inarg[0] == '\n') && (inpath[0] != '\n')) { // handling special cases like no path or no arg input for ls
+			inpath[strlen(inpath) - 1] = '\0';
+			gettimeofday(&start, NULL);
+			if (fork() == 0) {
+			    puts("");
+			    execl("/bin/ls", "ls", inpath, (char *) NULL);
+			} else {
+			    wait(NULL);
+			    gettimeofday(&stop, NULL);
+			    printStats();
+			}
+		    } else if ((inarg[0] != '\n') && (inpath[0] == '\n')) {
+			inarg[strlen(inarg) - 1] = '\0';
+			gettimeofday(&start, NULL);
+			if (fork() == 0) {
+			    puts("");
+			    execl("/bin/ls", "ls", inarg, (char *) NULL);
+			} else {
+			    wait(NULL);
+			    gettimeofday(&stop, NULL);
+			    printStats();
+			}
+		    } else if (inarg[0] == '\n' && inpath[0] == '\n') {
+			gettimeofday(&start, NULL);
+			if (fork() == 0) {
+			    puts("");
+			    execl("/bin/ls", "ls", (char *) NULL);
+			} else {
+			    wait(NULL);
+			    gettimeofday(&stop, NULL);
+			    printStats();
+			}
+		    } else { // last of the special cases for ls command input
+			inarg[strlen(inarg) - 1] = '\0';
+			inpath[strlen(inpath) - 1] = '\0';
 
-                    gettimeofday(&start, NULL);
-                    if (fork() == 0) {
-                        puts("");
-                        execl("/bin/ls", "ls", inarg, inpath, (char *) NULL);
-                    } else {
-                        wait(NULL);
-                        gettimeofday(&stop, NULL);
-                        printStats();
-                    }
-                }
-            } else if (!strncmp(input, "a", 1)) {//option a
+			gettimeofday(&start, NULL);
+			if (fork() == 0) {
+			    puts("");
+			    execl("/bin/ls", "ls", inarg, inpath, (char *) NULL);
+			} else {
+			    wait(NULL);
+			    gettimeofday(&stop, NULL);
+			    printStats();
+			}
+		    }
+		}
+		else {
+		    puts("");
+		    puts("ERROR: Maximum 32 arguments and 128 characters allowed.");
+	       	    puts("");
+		}
+	    } else if (!strncmp(input, "a", 1)) {//option a
 		if (id == 10) { // checking if the maximum user added command limit has been reached
 		    puts("You've reached the maximum number of user commands. New commands overwrite old ones. ");
 		    id = 3; // reseting local tracking variables
@@ -351,7 +358,7 @@ int main(int argc, char *argv[]) {
 		}
 		else{
 		    puts("");
-		    puts("ERROR: Maximum 32 arguments and 128 charcaters allowed.");
+		    puts("ERROR: Maximum 32 arguments and 128 characters allowed.");
 	       	    puts("");
 	       	}
             } else if (!strncmp(input, "c", 1)) {//option c
@@ -420,9 +427,10 @@ int main(int argc, char *argv[]) {
 }
 
 /*
-Additional Files:		Makefile, README.txt, mc0.c, mc1.c
+  Additional Files:		Makefile, README.txt, mc0.c, mc1.c, mc2.c, test_mc0.txt, test_mc1.txt, test_mc2.txt
 
-Test Procedures:		testfile is test_part3.txt
+  Test Procedures:		testfile is test_mc2.txt
 
-References:		     
- */
+  References:	cplusplus.com
+  man7.org	     
+*/
