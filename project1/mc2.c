@@ -388,7 +388,8 @@ int main(int argc, char *argv[]) {
 		    if (bgProcesses[i].running == 1) {
 			printf("\n[%d] %d %s\n", bgProcesses[i].bgid, bgProcesses[i].pid, bgProcesses[i].command); // print out the info if its running
 		    }
-		}    
+		}
+		puts("");
             } else {
                 for (i = 0; i < 32; i++) {//check if added command exists before dismissing it as not.The user added command is also executed from here
                     if ((input[0] - '0') == commandIDs[i]) {
@@ -405,7 +406,8 @@ int main(int argc, char *argv[]) {
                     addedCommandExists = 0; // flip flag if command does not exist
                 } else {
                     fprintf(stderr, "\nYou have entered an incorrect option.\n\n"); // You are the weakest link.
-                }
+		    puts("");
+		}
 
             }
         }//end wait
