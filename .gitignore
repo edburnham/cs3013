@@ -7,8 +7,9 @@
 # Unignore all dirs
 !*/
 
-# Unignore Makefiles
+# Unignore Makefiles/textfiles
 !Makefile
+!*.txt
 
 # Prerequisites
 *.d
@@ -60,6 +61,7 @@
 
 # Emacs autosaves
 *~
+
 modules.order
 Module.symvers
 Mkfile.old

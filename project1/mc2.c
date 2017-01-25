@@ -1,4 +1,3 @@
-
 /*
 Author:				Ed Burnham, Mike Caldwell
 Date:				1/16/2017 - 1/24/2017
@@ -122,15 +121,16 @@ void printStats() {//print statistics function
 void processExit(int waitPid) {
     int bgIndex, i;
 
-    gettimeofday(&stop, NULL); // stop time for wall clock timer
+    if (waitPid != 0) { // this check is for the exit condition wait4, so when it calls this and its 0, we dont do the rest
+	
+	gettimeofday(&stop, NULL); // stop time for wall clock timer
 
-    if (waitPid != 0) {    
-	for (i = 0; i < 32; i++) { // get index of process by matching pid from wait
+    	for (i = 0; i < 32; i++) { // get index of process by matching pid from wait
 	    if (bgProcesses[i].pid == waitPid) {
 		bgIndex = i;
 	    }
 	}
-
+	
 	// Print out completion notification
 	printf("-- Job Complete [%d] --\n", bgProcesses[bgIndex].bgid);
 	printf("Process ID: %d\n", bgProcesses[bgIndex].pid);
@@ -140,19 +140,17 @@ void processExit(int waitPid) {
 }
 
 int checkLength(char* command){
-	int count = 0;
-	int i;
+    int count = 0;
+    int i;
 	
-	if(strlen(command) >= 128){
-		return 0;
+    if(strlen(command) >= 128){
+	return 0;
+    }	
+    for (i = 0; i < strlen(command) + 1; i++) {
+	if (command[i] == ' ') {
+	    count++;
 	}
-	
-	for (i = 0; i < strlen(command) + 1; i++) {
-		if (command[i] == ' ') {
-		    count++;
-		}
     }
-    
     if(count > 32){
      	return 0;
     }
@@ -188,14 +186,13 @@ void userCommandExec(int commandIndex) {//executes user added command
     }
     
     if (!strncmp(args[tokens - 1], "&", 1)) { // if it's a background process, denoted by &
-        bgpIndex++; // index for tracking total background processes
         args[tokens - 1] = NULL; // stripping off '\n' char
         
 	bgProcesses[bgpIndex].pid = fork(); // forking, storing PID in ids
         bgProcesses[bgpIndex].bgid = bgpIndex; // storing the bgid
         bgProcesses[bgpIndex].command = commandsToPrint[commandIndex]; // command string
 	bgProcesses[bgpIndex].running = 1; // running flag
-
+	
 	gettimeofday(&start, NULL); //getting time
 	
         if (bgProcesses[bgpIndex].pid == 0) { // if CHILD
@@ -211,7 +208,10 @@ void userCommandExec(int commandIndex) {//executes user added command
                     break;
                 }
             }
-        }
+	}
+	
+	bgpIndex++; // index for tracking total background processes
+	
     } else { // command is NOT a background process
         gettimeofday(&start, NULL); //getting time
         if (fork() == 0) { // the child
@@ -384,9 +384,9 @@ int main(int argc, char *argv[]) {
             } else if (!strncmp(input, "r", 1)) {//option p
                 puts("");
                 puts("-- Background Processes --");
-                for (i = 0; i < bgpIndex; i++) {
+                for (i = 0; i < bgpIndex; i++) { // iterate through struct and find the running ones
 		    if (bgProcesses[i].running == 1) {
-			printf("\n[%d] %d %s\n", bgProcesses[i].bgid, bgProcesses[i].pid, bgProcesses[i].command);
+			printf("\n[%d] %d %s\n", bgProcesses[i].bgid, bgProcesses[i].pid, bgProcesses[i].command); // print out the info if its running
 		    }
 		}    
             } else {
@@ -402,9 +402,9 @@ int main(int argc, char *argv[]) {
                             userCommandExec(i);//execute user added command using ID fro command
                         }
                     }
-                    addedCommandExists = 0;
+                    addedCommandExists = 0; // flip flag if command does not exist
                 } else {
-                    fprintf(stderr, "\nYou have entered an incorrect option.\n\n");
+                    fprintf(stderr, "\nYou have entered an incorrect option.\n\n"); // You are the weakest link.
                 }
 
             }
@@ -414,18 +414,9 @@ int main(int argc, char *argv[]) {
 }
 
 /*
-Additional Files:		names of other files used
+Additional Files:		Makefile, README.txt, mc0.c, mc1.c
 
-Results:			listing of sample run(s) of the program
+Test Procedures:		testfile is test_part3.txt
 
-Test Procedures:		how the program was tested
-Test Data:			test cases
-
-Performance Evaluation:		how well the program performs
-	Time/Space
-	User Interface
-
-References:			books, papers, people, web, ...
+References:		     
  */
-
-
