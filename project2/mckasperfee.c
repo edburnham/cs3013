@@ -12,7 +12,7 @@ static unsigned long **find_sys_call_table(void) {
     unsigned long **sct;
     while (offset < ULLONG_MAX) {
 	sct = (unsigned long **)offset;
-	1
+	//1
 	    if (sct[__NR_close] == (unsigned long *) sys_close) {
 		printk(KERN_INFO "Interceptor: Found syscall table at address: 0x%02lX",
 		       (unsigned long) sct);
@@ -56,7 +56,7 @@ static int __init interceptor_start(void) {
     /* Replace the existing system calls */
     disable_page_protection();
     sys_call_table[__NR_cs3013_syscall1] = (unsigned long *)new_sys_cs3013_syscall1;
-    2
+    //2
 	enable_page_protection();
     /* And indicate the load was successful */
     printk(KERN_INFO "Loaded interceptor!");

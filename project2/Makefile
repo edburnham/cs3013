@@ -1,10 +1,9 @@
-all: mckasperfee
+obj-m := mckasperfee.o
+KDIR := /lib/modules/$(shell uname -r)/build
+PWD := $(shell pwd)
 
-mckasperfee: mckasperfee.o
-	gcc -Wall mckasperfee.o -o mckasperfee
-
-mckasperfee.o: mckasperfee.c
-	gcc -Wall -c mckasperfee.c
+all:
+	$(MAKE) -C $(KDIR) M=$(PWD) modules
 
 clean:
-	rm -f mckasperfee.o mckasperfee 
+	$(MAKE) -C $(KDIR) M=$(PWD) clean
