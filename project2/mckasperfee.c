@@ -1,18 +1,20 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/syscalls.h>
+
 unsigned long **sys_call_table;
 asmlinkage long (*ref_sys_cs3013_syscall1)(void);
+
 asmlinkage long new_sys_cs3013_syscall1(void) {
     printk(KERN_INFO "\"’Hello world?!’ More like ’Goodbye, world!’ EXTERMINATE!\" -- Dalek");
     return 0;
 }
+
 static unsigned long **find_sys_call_table(void) {
     unsigned long int offset = PAGE_OFFSET;
     unsigned long **sct;
     while (offset < ULLONG_MAX) {
 	sct = (unsigned long **)offset;
-	//1
 	    if (sct[__NR_close] == (unsigned long *) sys_close) {
 		printk(KERN_INFO "Interceptor: Found syscall table at address: 0x%02lX",
 		       (unsigned long) sct);
@@ -22,6 +24,7 @@ static unsigned long **find_sys_call_table(void) {
     }
     return NULL;
 }
+
 static void disable_page_protection(void) {
     /*
 Control Register 0 (cr0) governs how the CPU operates.
@@ -37,6 +40,7 @@ It’s good to be the kernel!
     */
     write_cr0 (read_cr0 () & (~ 0x10000));
 }
+
 static void enable_page_protection(void) {
     /*
 See the above description for cr0. Here, we use an OR to set the
@@ -44,6 +48,7 @@ See the above description for cr0. Here, we use an OR to set the
     */
     write_cr0 (read_cr0 () | 0x10000);
 }
+
 static int __init interceptor_start(void) {
     /* Find the system call table */
     if(!(sys_call_table = find_sys_call_table())) {
@@ -56,12 +61,12 @@ static int __init interceptor_start(void) {
     /* Replace the existing system calls */
     disable_page_protection();
     sys_call_table[__NR_cs3013_syscall1] = (unsigned long *)new_sys_cs3013_syscall1;
-    //2
 	enable_page_protection();
     /* And indicate the load was successful */
     printk(KERN_INFO "Loaded interceptor!");
     return 0;
 }
+
 static void __exit interceptor_end(void) {
     /* If we don’t know what the syscall table is, don’t bother. */
     if(!sys_call_table)
