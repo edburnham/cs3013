@@ -3,11 +3,23 @@
 #include <linux/syscalls.h>
 
 unsigned long **sys_call_table;
-asmlinkage long (*ref_sys_cs3013_syscall1)(void);
+asmlinkage long (*ref_sys_open)(void);
 
-asmlinkage long new_sys_cs3013_syscall1(void) {
-    printk(KERN_INFO "\"’Hello world?!’ More like ’Goodbye, world!’ EXTERMINATE!\" -- Dalek");
-    return 0;
+asmlinkage long new_sys_open(const char *filename, int flags, int mode) {
+    unsigned int uid = (unsigned int)current_uid();
+    if (uid >= 1000) {
+	char *tmp = getname(filename);
+	int fd = get_unused_fd();
+	struct file *f = filp_open(tmp, flags, mode);
+	fd_install(fd, f);
+	putname(tmp);
+	printk(KERN_INFO "\"’Hello world?!’ More like ’Goodbye, world!’ EXTERMINATE!\" -- Dalek");
+	return fd;
+    }
+    else {
+	printk(KERN_INFO "\"You are not a user. (UID < 1000)");
+	return -1;
+    }
 }
 
 static unsigned long **find_sys_call_table(void) {
@@ -57,10 +69,10 @@ static int __init interceptor_start(void) {
 	return -1;
     }
     /* Store a copy of all the existing functions */
-    ref_sys_cs3013_syscall1 = (void *)sys_call_table[__NR_cs3013_syscall1];
+    ref_sys_open = (void *)sys_call_table[__NR_sys_open];
     /* Replace the existing system calls */
     disable_page_protection();
-    sys_call_table[__NR_cs3013_syscall1] = (unsigned long *)new_sys_cs3013_syscall1;
+    sys_call_table[__NR_sys_open] = (unsigned long *)new_sys_open;
 	enable_page_protection();
     /* And indicate the load was successful */
     printk(KERN_INFO "Loaded interceptor!");
@@ -73,7 +85,7 @@ static void __exit interceptor_end(void) {
 	return;
     /* Revert all system calls to what they were before we began. */
     disable_page_protection();
-    sys_call_table[__NR_cs3013_syscall1] = (unsigned long *)ref_sys_cs3013_syscall1;
+    sys_call_table[__NR_sys_open] = (unsigned long *)ref_sys_open;
     enable_page_protection();
     printk(KERN_INFO "Unloaded interceptor!");
 }
