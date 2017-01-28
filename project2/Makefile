@@ -7,3 +7,6 @@ all:
 
 clean:
 	$(MAKE) -C $(KDIR) M=$(PWD) clean
+
+test:
+	gcc -Wall -o testcalls.o testcalls.c
