@@ -7,9 +7,15 @@
 
 unsigned long **sys_call_table;
 
+asmlinkage long (*ref_sys_cs3013_syscall1)(void);
 asmlinkage long (*ref_sys_open)(const char* __user, int, int);
 asmlinkage long (*ref_sys_close)(int fd);
 asmlinkage long (*ref_sys_read)(int fd, void* buff, size_t cnt);
+
+asmlinkage long new_sys_cs3013_syscall1(void) {
+    printk(KERN_INFO "\"’Hello world?!’ More like ’Goodbye, world!’ EXTERMINATE!\" -- Dalek");
+    return 0;
+}
 
 asmlinkage long new_sys_open(const char* __user filename, int flags, int mode) {
     unsigned int uid = current_uid().val;
@@ -96,16 +102,20 @@ static int __init interceptor_start(void) {
 	   Cancel the module loading step. */
 	return -1;
     }
+    
     /* Store a copy of all the existing functions */
     ref_sys_open = (void *)sys_call_table[__NR_open];
     ref_sys_close = (void *)sys_call_table[__NR_close];
     ref_sys_read = (void *)sys_call_table[__NR_read];
+    ref_sys_cs3013_syscall1 = (void *)sys_call_table[__NR_cs3013_syscall1];
+    
     /* Replace the existing system calls */
     disable_page_protection();
     sys_call_table[__NR_open] = (unsigned long *)new_sys_open;
     sys_call_table[__NR_close] = (unsigned long *)new_sys_close;
     sys_call_table[__NR_read] = (unsigned long *)new_sys_read;
-	enable_page_protection();
+    sys_call_table[__NR_cs3013_syscall1] = (unsigned long *)new_sys_cs3013_syscall1;
+    enable_page_protection();
     /* And indicate the load was successful */
     printk(KERN_INFO "Loaded interceptor!");
     return 0;
@@ -120,6 +130,7 @@ static void __exit interceptor_end(void) {
     sys_call_table[__NR_open] = (unsigned long *)ref_sys_open;
     sys_call_table[__NR_close] = (unsigned long *)ref_sys_close;
     sys_call_table[__NR_read] = (unsigned long *)ref_sys_read;
+    sys_call_table[__NR_cs3013_syscall1] = (unsigned long *)ref_sys_cs3013_syscall1;
     enable_page_protection();
     printk(KERN_INFO "Unloaded interceptor!");
 }
