@@ -1,24 +1,52 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/syscalls.h>
+#include <linux/highmem.h>
+#include <asm/unistd.h>
+
 
 unsigned long **sys_call_table;
-asmlinkage long (*ref_sys_open)(void);
 
-asmlinkage long new_sys_open(const char *filename, int flags, int mode) {
-    unsigned int uid = (unsigned int)current_uid();
+asmlinkage long (*ref_sys_open)(const char* __user, int, int);
+asmlinkage long (*ref_sys_close)(int fd);
+asmlinkage long (*ref_sys_read)(int fd, void* buff, size_t cnt);
+
+asmlinkage long new_sys_open(const char* __user filename, int flags, int mode) {
+    unsigned int uid = current_uid().val;
+    
     if (uid >= 1000) {
-	char *tmp = getname(filename);
-	int fd = get_unused_fd();
-	struct file *f = filp_open(tmp, flags, mode);
-	fd_install(fd, f);
-	putname(tmp);
-	printk(KERN_INFO "\"’Hello world?!’ More like ’Goodbye, world!’ EXTERMINATE!\" -- Dalek");
-	return fd;
+	printk(KERN_INFO "User %u is opening file: %s\n", uid, filename);
+	return ref_sys_open(filename, flags, mode);
     }
     else {
-	printk(KERN_INFO "\"You are not a user. (UID < 1000)");
-	return -1;
+	return ref_sys_open(filename, flags, mode);
+    }
+}
+
+asmlinkage long new_sys_close(int fd) {
+    unsigned int uid = current_uid().val;
+        
+    if (uid >= 1000) {
+    	printk(KERN_INFO "User %u is closing file: %d\n", uid, fd);
+	return ref_sys_close(fd);
+    }
+    else {	
+	return ref_sys_close(fd);
+    }
+}
+
+asmlinkage long new_sys_read(int fd, void* buff, size_t cnt) {
+    unsigned int uid = current_uid().val;
+    char* signature = "VIRUS";
+       
+    if (uid >= 1000) {
+	if(strstr(buff, signature) != NULL){
+		printk(KERN_INFO "User %u read from file desciptor: %d, but that file contained malicious code.\n", uid, fd);
+	}
+	return ref_sys_read(fd, buff, cnt);
+    }
+    else {
+	return ref_sys_read(fd, buff, cnt);
     }
 }
 
@@ -69,10 +97,14 @@ static int __init interceptor_start(void) {
 	return -1;
     }
     /* Store a copy of all the existing functions */
-    ref_sys_open = (void *)sys_call_table[__NR_sys_open];
+    ref_sys_open = (void *)sys_call_table[__NR_open];
+    ref_sys_close = (void *)sys_call_table[__NR_close];
+    ref_sys_read = (void *)sys_call_table[__NR_read];
     /* Replace the existing system calls */
     disable_page_protection();
-    sys_call_table[__NR_sys_open] = (unsigned long *)new_sys_open;
+    sys_call_table[__NR_open] = (unsigned long *)new_sys_open;
+    sys_call_table[__NR_close] = (unsigned long *)new_sys_close;
+    sys_call_table[__NR_read] = (unsigned long *)new_sys_read;
 	enable_page_protection();
     /* And indicate the load was successful */
     printk(KERN_INFO "Loaded interceptor!");
@@ -85,7 +117,9 @@ static void __exit interceptor_end(void) {
 	return;
     /* Revert all system calls to what they were before we began. */
     disable_page_protection();
-    sys_call_table[__NR_sys_open] = (unsigned long *)ref_sys_open;
+    sys_call_table[__NR_open] = (unsigned long *)ref_sys_open;
+    sys_call_table[__NR_close] = (unsigned long *)ref_sys_close;
+    sys_call_table[__NR_read] = (unsigned long *)ref_sys_read;
     enable_page_protection();
     printk(KERN_INFO "Unloaded interceptor!");
 }
