@@ -2,9 +2,11 @@
 #include <linux/module.h>
 #include <linux/syscalls.h>
 #include <linux/highmem.h>
+#include <linux/list.h>
+
 /*
 #include <linux/sched.h>//task struct location 
-#include <linux/list.h>
+include <linux/list.h>
 #include <asm/current.h>//current macro
 #include <asm-generic/uaccess.h>
 */
@@ -17,7 +19,12 @@
 	     pos = list_next_entry(pos, member))
 
 struct task_struct* taskStruct;
-struct task_struct* taskStorage;
+//struct task_struct* taskStorage;
+
+
+pid_t tmp_pid;
+//LIST_HEAD_INIT(ts){&ts.children};
+
 
 struct ancestry{
 	    pid_t ancestors[10];
@@ -25,27 +32,59 @@ struct ancestry{
 	    pid_t children[100];
     };
 
-
 unsigned long **sys_call_table;
 
 asmlinkage long (*ref_sys_cs3013_syscall2)(unsigned short *target_pid, struct ancestry *response);
 
-asmlinkage long new_sys_cs3013_syscall2(unsigned short *target_pid, struct ancestry *response) {
-    int i = 0;
-    struct ancestry* ans;
+void traverse_parent(struct task_struct *task){
+	struct task_struct *parent = NULL;
+	
+	while(task){
+		parent = task->real_parent;
+		if(parent && task->pid != -1){
+			printk(", ");
+			traverse_parent(parent);
+		}
+	
+		task = parent;
+	}
+}
+
+void traverse_children(struct task_struct *task){
+    struct list_head *list;
+    struct task_struct *child;
     
+	while(task){
+		list_for_each(list, &task->children){
+			child = list_entry(list, struct task_struct, sibling);
+			//tmp_pid = child.pid;
+			//printk("the pid %d\n", tmp_pid);
+			printk("pid: [%d]\n", task->pid);
+			task = children;
+    	}
+	}
+    
+}
+
+asmlinkage long new_sys_cs3013_syscall2(unsigned short *target_pid, struct ancestry *response) {
+    //struct ancestry* ans;
+   
     taskStruct = get_current();
+    traverse_children(&init_task);
+	traverse_parent(&taskStruct);
+    //traverse_child(taskStruct);
     /*    
     if (copy_from_user(&ans, response, sizeof(response))){
         return -EFAULT;
     }
-    */
-    list_for_each_entry(taskStorage, &taskStruct, children){
+    
+    list_for_each_entry(taskStorage, &taskStruct->children, children){
         //ans->children[i] = taskStorage->pid;
             i++;
-    }
-    printk(KERN_INFO "i : %d\n", i);
-	i = 0;
+    }*/
+    
+   // printk(KERN_INFO "i : %d\n", i);
+	//i = 0;
     /*
     for(i = 0; i < 100; i++){
         ans->children[i] = taskStruct->children->
