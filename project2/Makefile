@@ -8,5 +8,5 @@ all:
 clean:
 	$(MAKE) -C $(KDIR) M=$(PWD) clean
 
-test:
-	gcc -Wall -o testcalls testcalls.c 
+pans:
+	gcc -Wall -o procAncestry procAncestry.c 

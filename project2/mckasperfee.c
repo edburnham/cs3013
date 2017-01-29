@@ -2,64 +2,61 @@
 #include <linux/module.h>
 #include <linux/syscalls.h>
 #include <linux/highmem.h>
+/*
+#include <linux/sched.h>//task struct location 
+#include <linux/list.h>
+#include <asm/current.h>//current macro
+#include <asm-generic/uaccess.h>
+*/
+
 #include <asm/unistd.h>
+
+#define list_for_each_entry(pos, head, member)				\
+	for (pos = list_first_entry(head, typeof(*pos), member);	\
+	     &pos->member != (head);					\
+	     pos = list_next_entry(pos, member))
+
+struct task_struct* taskStruct;
+struct task_struct* taskStorage;
+
+struct ancestry{
+	    pid_t ancestors[10];
+	    pid_t siblings[100];
+	    pid_t children[100];
+    };
 
 
 unsigned long **sys_call_table;
 
-asmlinkage long (*ref_sys_cs3013_syscall1)(void);
-asmlinkage long (*ref_sys_cs3013_syscall2)(void);
-asmlinkage long (*ref_sys_open)(const char* __user, int, int);
-asmlinkage long (*ref_sys_close)(int fd);
-asmlinkage long (*ref_sys_read)(int fd, void* buff, size_t cnt);
+asmlinkage long (*ref_sys_cs3013_syscall2)(unsigned short *target_pid, struct ancestry *response);
 
-asmlinkage long new_sys_cs3013_syscall1(void) {
-    printk(KERN_INFO "\"’Hello world?!’ More like ’Goodbye, world!’ EXTERMINATE!\" -- Dalek");
-    return 0;
-}
-
-asmlinkage long new_sys_cs3013_syscall2(void) {
-    printk(KERN_INFO "\"’Hello world?!’ More like ’Goodbye, CRUEL world!’ EXTERMINATE!\" -- Dalek");
-    return 0;
-}
-
-asmlinkage long new_sys_open(const char* __user filename, int flags, int mode) {
-    unsigned int uid = current_uid().val;
+asmlinkage long new_sys_cs3013_syscall2(unsigned short *target_pid, struct ancestry *response) {
+    int i = 0;
+    struct ancestry* ans;
     
-    if (uid >= 1000) {
-	printk(KERN_INFO "User %u is opening file: %s\n", uid, filename);
-	return ref_sys_open(filename, flags, mode);
+    taskStruct = get_current();
+    /*    
+    if (copy_from_user(&ans, response, sizeof(response))){
+        return -EFAULT;
     }
-    else {
-	return ref_sys_open(filename, flags, mode);
+    */
+    list_for_each_entry(taskStorage, &taskStruct, children){
+        //ans->children[i] = taskStorage->pid;
+            i++;
     }
-}
+    printk(KERN_INFO "i : %d\n", i);
+	i = 0;
+    /*
+    for(i = 0; i < 100; i++){
+        ans->children[i] = taskStruct->children->
+    }*/
+    
+    printk(KERN_INFO "\"'Hello world?!' More like 'ProcAncestry!' tree!\" -- Dalek");
+    
+    //printk(KERN_INFO "pid: %d\n", taskStruct->pid);
+    //printk(KERN_INFO "children: %p\n", ans->children);
 
-asmlinkage long new_sys_close(int fd) {
-    unsigned int uid = current_uid().val;
-        
-    if (uid >= 1000) {
-    	printk(KERN_INFO "User %u is closing file: %d\n", uid, fd);
-	return ref_sys_close(fd);
-    }
-    else {	
-	return ref_sys_close(fd);
-    }
-}
-
-asmlinkage long new_sys_read(int fd, void* buff, size_t cnt) {
-    unsigned int uid = current_uid().val;
-    char* signature = "VIRUS";
-       
-    if (uid >= 1000) {
-	if(strstr(buff, signature) != NULL){
-		printk(KERN_INFO "User %u read from file desciptor: %d, but that file contained malicious code.\n", uid, fd);
-	}
-	return ref_sys_read(fd, buff, cnt);
-    }
-    else {
-	return ref_sys_read(fd, buff, cnt);
-    }
+    return 0;
 }
 
 static unsigned long **find_sys_call_table(void) {
@@ -110,18 +107,10 @@ static int __init interceptor_start(void) {
     }
     
     /* Store a copy of all the existing functions */
-    ref_sys_open = (void *)sys_call_table[__NR_open];
-    ref_sys_close = (void *)sys_call_table[__NR_close];
-    ref_sys_read = (void *)sys_call_table[__NR_read];
-    ref_sys_cs3013_syscall1 = (void *)sys_call_table[__NR_cs3013_syscall1];
     ref_sys_cs3013_syscall2 = (void *)sys_call_table[__NR_cs3013_syscall2];
     
     /* Replace the existing system calls */
     disable_page_protection();
-    sys_call_table[__NR_open] = (unsigned long *)new_sys_open;
-    sys_call_table[__NR_close] = (unsigned long *)new_sys_close;
-    sys_call_table[__NR_read] = (unsigned long *)new_sys_read;
-    sys_call_table[__NR_cs3013_syscall1] = (unsigned long *)new_sys_cs3013_syscall1;
     sys_call_table[__NR_cs3013_syscall2] = (unsigned long *)new_sys_cs3013_syscall2;
     enable_page_protection();
     /* And indicate the load was successful */
@@ -135,10 +124,6 @@ static void __exit interceptor_end(void) {
 	return;
     /* Revert all system calls to what they were before we began. */
     disable_page_protection();
-    sys_call_table[__NR_open] = (unsigned long *)ref_sys_open;
-    sys_call_table[__NR_close] = (unsigned long *)ref_sys_close;
-    sys_call_table[__NR_read] = (unsigned long *)ref_sys_read;
-    sys_call_table[__NR_cs3013_syscall1] = (unsigned long *)ref_sys_cs3013_syscall1;
     sys_call_table[__NR_cs3013_syscall2] = (unsigned long *)ref_sys_cs3013_syscall2;
     enable_page_protection();
     printk(KERN_INFO "Unloaded interceptor!");
