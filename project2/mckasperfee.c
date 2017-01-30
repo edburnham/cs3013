@@ -45,7 +45,7 @@ void traverse_parent(struct task_struct *task){
 			printk(", ");
 			traverse_parent(parent);
 		}
-	
+		printk("pid: [%d]\n", parent->pid);
 		task = parent;
 	}
 }
@@ -60,7 +60,7 @@ void traverse_children(struct task_struct *task){
 			//tmp_pid = child.pid;
 			//printk("the pid %d\n", tmp_pid);
 			printk("pid: [%d]\n", task->pid);
-			task = children;
+			task = child;
     	}
 	}
     
@@ -71,7 +71,7 @@ asmlinkage long new_sys_cs3013_syscall2(unsigned short *target_pid, struct ances
    
     taskStruct = get_current();
     traverse_children(&init_task);
-	traverse_parent(&taskStruct);
+	traverse_parent(taskStruct);
     //traverse_child(taskStruct);
     /*    
     if (copy_from_user(&ans, response, sizeof(response))){
