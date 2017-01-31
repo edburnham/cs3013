@@ -1,22 +1,9 @@
+#include <linux/list.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/syscalls.h>
 #include <linux/highmem.h>
-#include <linux/list.h>
-
-/*
-  #include <linux/sched.h>//task struct location 
-  include <linux/list.h>
-  #include <asm/current.h>//current macro
-  #include <asm-generic/uaccess.h>
-*/
-
 #include <asm/unistd.h>
-
-#define list_for_each_entry(pos, head, member)			\
-    for (pos = list_first_entry(head, typeof(*pos), member);	\
-	 &pos->member != (head);				\
-	 pos = list_next_entry(pos, member))
 
 struct task_struct* taskStruct;
 //struct task_struct* taskStorage;
@@ -51,27 +38,29 @@ void traverse_parent(struct task_struct *task){
 }
 
 void traverse_children(struct task_struct *task){
-    struct list_head *list;
-    struct task_struct *child;
-
-    list = &task->children;
+    struct task_struct *list;
+    //struct task_struct *child;
+    //INIT_LIST_HEAD(&list);
     
-    while(task != NULL){
+    list_for_each_entry(list, &(task->children), sibling){
+	printk("pid: %d", list->pid);
+    }
+    /*while(task != NULL){
 	list_for_each(list, &task->children){
 	    child = list_entry(list, struct task_struct, sibling);
 	    printk("pid: [%d]\n", child->pid);
 	    task = child;
     	}
-    }
+	}*/
     
 }
 
 asmlinkage long new_sys_cs3013_syscall2(unsigned short *target_pid, struct ancestry *response) {
     //struct ancestry* ans;
    
-    taskStruct = get_current();
+    //taskStruct = get_current();
     traverse_children(&init_task);
-    traverse_parent(taskStruct);
+    //traverse_parent(taskStruct);
     //traverse_child(taskStruct);
     /*    
 	  if (copy_from_user(&ans, response, sizeof(response))){
