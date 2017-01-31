@@ -20,15 +20,23 @@ struct ancestry{
 	pid_t children[100];
 };
 
-long testCall2 (void) {
-    return (long) syscall(__NR_cs3013_syscall2);
+long testCall2 (unsigned short *target_pid, struct ancestry *response) {
+    return (long) syscall(__NR_cs3013_syscall2, &target_pid, response);
 }
 
 //int argc, char** argv
-int main () {
-	
+int main (int argc, char* argv[]) {
+	struct ancestry *response;
+	printf("num args: %d\n", argc);
     //printf("\tcs3013_syscall2: %ld\n", testCall2());
-	testCall2();
+	if(argc == 2){
+		testCall2((unsigned short *)atoi(argv[1]), response);
+		return 0;
+	}else{
+		puts("Exiting: need to pass only 1 agument: <PID>");
+		return 0;
+	}
 	
-    return 0;
+	
+    
 }

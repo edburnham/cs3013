@@ -57,7 +57,7 @@ void traverse_children(struct task_struct *task){
 
 asmlinkage long new_sys_cs3013_syscall2(unsigned short *target_pid, struct ancestry *response) {
     //struct ancestry* ans;
-   
+   printk("target pid: %d\n", *target_pid);
     //taskStruct = get_current();
     traverse_children(&init_task);
     //traverse_parent(taskStruct);
