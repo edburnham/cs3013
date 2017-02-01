@@ -59,6 +59,7 @@ void traverse_sibling(struct task_struct *task){
 
 asmlinkage long new_sys_cs3013_syscall2(unsigned short *target_pid, struct ancestry *response) {
     int pid = *target_pid;
+    
     struct task_struct *task = NULL;
     
     printk("\ntarget pid: %d\n", *target_pid);
