@@ -7,17 +7,12 @@
 #include <asm/unistd.h>
 
 struct task_struct* taskStruct;
-//struct task_struct* taskStorage;
-
-pid_t tmp_pid;
-//LIST_HEAD_INIT(ts){&ts.children};
-
 
 struct ancestry{
     pid_t ancestors[10];
     pid_t siblings[100];
     pid_t children[100];
-};
+}ancestry;
 
 unsigned long **sys_call_table;
 
@@ -25,69 +20,57 @@ asmlinkage long (*ref_sys_cs3013_syscall2)(unsigned short *target_pid, struct an
 
 void traverse_parent(struct task_struct *task){
     struct task_struct * temp_parent;
-int i=0;
+    //int pid = 0;
+    int i = 0;
     temp_parent = task->parent;
-    while(i != 2){
-        
-        	printk("parent pid: %d\n", temp_parent->pid);
+    //pid = temp_parent->pid;
+    while(temp_parent->pid != 0){
+        //printk("parent pid: %d\n", temp_parent->pid);
+        ancestry.ancestors[i] = temp_parent->pid;
+        printk("parent pid: %d\n", ancestry.ancestors[i]);
         temp_parent = temp_parent->parent;
         i++;
     }    
 }
 
 void traverse_children(struct task_struct *task){
-    struct task_struct *list;
+    struct task_struct *child;
+    int i = 0;
     
-    list_for_each_entry(list, &(task->children), sibling){
-	printk("child pid: %d\n", list->pid);
+    list_for_each_entry(child, &(task->children), sibling){
+	    printk("child pid: %d\n", child->pid);
+        ancestry.children[i] = child->pid;
+        i++;
     }    
 }
 
 void traverse_sibling(struct task_struct *task){
     struct task_struct *list;
     struct task_struct * task_parent;
+    int i = 0;
+    
     task_parent = task->real_parent;
     
     list_for_each_entry(list, &(task_parent->children), sibling){
-	printk("sibling pid: %d\n", list->pid);
+        ancestry.siblings[i] = list->pid;
+	    printk("sibling pid: %d\n", list->pid);
     }    
 }
 
 asmlinkage long new_sys_cs3013_syscall2(unsigned short *target_pid, struct ancestry *response) {
-    //struct ancestry* ans;
     int pid = *target_pid;
     struct task_struct *task = NULL;
-   printk("target pid: %d\n", *target_pid);
+    
+    printk("\ntarget pid: %d\n", *target_pid);
     
     task = pid_task(find_vpid(pid), PIDTYPE_PID);
     taskStruct = get_current();
+    
     traverse_children(task);
     traverse_parent(task);
     traverse_sibling(task);
-    //traverse_parent(taskStruct);
-    //traverse_child(taskStruct);
-    /*    
-	  if (copy_from_user(&ans, response, sizeof(response))){
-	  return -EFAULT;
-	  }
-    
-	  list_for_each_entry(taskStorage, &taskStruct->children, children){
-	  //ans->children[i] = taskStorage->pid;
-	  i++;
-	  }*/
-    
-    // printk(KERN_INFO "i : %d\n", i);
-    //i = 0;
-    /*
-      for(i = 0; i < 100; i++){
-      ans->children[i] = taskStruct->children->
-      }*/
-    
-    printk(KERN_INFO "\"'Hello world?!' More like 'ProcAncestry!' tree!\" -- Dalek");
-    
-    //printk(KERN_INFO "pid: %d\n", taskStruct->pid);
-    //printk(KERN_INFO "children: %p\n", ans->children);
 
+    printk(KERN_INFO "\"'Hello world?!' More like 'ProcAncestry!' tree!\" -- Dalek");
     return 0;
 }
 
