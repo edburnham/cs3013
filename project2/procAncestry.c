@@ -26,7 +26,7 @@ long testCall2 (unsigned short *target_pid, struct ancestry *response) {
 
 //int argc, char** argv
 int main (int argc, char* argv[]) {
-	struct ancestry *response;
+	struct ancestry *response = NULL;
 	printf("num args: %d\n", argc);
     //printf("\tcs3013_syscall2: %ld\n", testCall2());
 	if(argc == 2){
@@ -37,6 +37,6 @@ int main (int argc, char* argv[]) {
 		return 0;
 	}
 	
-	
+	return 0;
     
 }

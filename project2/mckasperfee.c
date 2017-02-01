@@ -3,11 +3,11 @@
 #include <linux/module.h>
 #include <linux/syscalls.h>
 #include <linux/highmem.h>
+#include <linux/pid.h>
 #include <asm/unistd.h>
 
 struct task_struct* taskStruct;
 //struct task_struct* taskStorage;
-
 
 pid_t tmp_pid;
 //LIST_HEAD_INIT(ts){&ts.children};
@@ -24,42 +24,46 @@ unsigned long **sys_call_table;
 asmlinkage long (*ref_sys_cs3013_syscall2)(unsigned short *target_pid, struct ancestry *response);
 
 void traverse_parent(struct task_struct *task){
-    struct task_struct *parent = NULL;
-	
-    while(task){
-	parent = task->real_parent;
-	if(parent && task->pid != -1){
-	    printk(", ");
-	    traverse_parent(parent);
-	}
-	printk("pid: [%d]\n", parent->pid);
-	task = parent;
-    }
+    struct task_struct * temp_parent;
+int i=0;
+    temp_parent = task->parent;
+    while(i != 2){
+        
+        	printk("parent pid: %d\n", temp_parent->pid);
+        temp_parent = temp_parent->parent;
+        i++;
+    }    
 }
 
 void traverse_children(struct task_struct *task){
     struct task_struct *list;
-    //struct task_struct *child;
-    //INIT_LIST_HEAD(&list);
     
     list_for_each_entry(list, &(task->children), sibling){
-	printk("pid: %d", list->pid);
-    }
-    /*while(task != NULL){
-	list_for_each(list, &task->children){
-	    child = list_entry(list, struct task_struct, sibling);
-	    printk("pid: [%d]\n", child->pid);
-	    task = child;
-    	}
-	}*/
+	printk("child pid: %d\n", list->pid);
+    }    
+}
+
+void traverse_sibling(struct task_struct *task){
+    struct task_struct *list;
+    struct task_struct * task_parent;
+    task_parent = task->real_parent;
     
+    list_for_each_entry(list, &(task_parent->children), sibling){
+	printk("sibling pid: %d\n", list->pid);
+    }    
 }
 
 asmlinkage long new_sys_cs3013_syscall2(unsigned short *target_pid, struct ancestry *response) {
     //struct ancestry* ans;
+    int pid = *target_pid;
+    struct task_struct *task = NULL;
    printk("target pid: %d\n", *target_pid);
-    //taskStruct = get_current();
-    traverse_children(&init_task);
+    
+    task = pid_task(find_vpid(pid), PIDTYPE_PID);
+    taskStruct = get_current();
+    traverse_children(task);
+    traverse_parent(task);
+    traverse_sibling(task);
     //traverse_parent(taskStruct);
     //traverse_child(taskStruct);
     /*    
