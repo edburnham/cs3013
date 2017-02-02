@@ -15,12 +15,13 @@ struct ancestry {
 
 struct ancestry buffy;
 
+ /*to keep track of the number of PIDS for each member, for printing*/
 int numChild = 0; 
 int numSib = 0;
 int numAns = 0;
 
 unsigned short yPid;
-unsigned short zero;
+unsigned short zero;//user space flag to send back for non existence of pid
 
 unsigned long **sys_call_table;
 
