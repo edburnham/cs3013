@@ -9,6 +9,8 @@
 #define __NR_cs3013_syscall2 378
 #define __NR_cs3013_syscall3 379
 
+#define UNSIGNED_SHORT_VAL 65535
+
 struct ancestry{
     pid_t ancestors[10];
     pid_t siblings[100];
@@ -37,6 +39,11 @@ int main (int argc, char* argv[]) {
     if(argc == 2){
 	    input = (unsigned short)atoi(argv[1]);
 	    uPid = input;
+
+        if(atoi(argv[1]) > UNSIGNED_SHORT_VAL){
+            printf("PID is unsigned short, %d or less.\n", UNSIGNED_SHORT_VAL);
+            return 0;
+        }
         
 	    testCall2();
         
@@ -44,15 +51,15 @@ int main (int argc, char* argv[]) {
             printf("PID %d does not esist.\n", input);
             return 0;
         }else{
-            puts("Printed ancestry tree to syslog");   
+            puts("Printed ancestry tree to syslog.");   
         }
     }
     else if(argc == 1){
-        puts("Need to input PID");
+	    puts("Incorrect. Usage: ./procAncestry <PID>");
         return 0;
     }
     else {
-	    puts("Usage: procAncestry <PID>");
+	    puts("Incorrect. Usage: ./procAncestry <PID>");
 	    return 0;
     }  
 }
