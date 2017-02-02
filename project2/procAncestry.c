@@ -15,16 +15,17 @@ struct ancestry{
     pid_t children[100];
 };
 
-struct ancestry *buffu;
+struct ancestry buffu;
 
-unsigned short *uPid;
+unsigned short uPid;
+unsigned short fromKernel;
 
 long testCall1 (void) {
     return (long) syscall(__NR_cs3013_syscall1);
 }
 
 long testCall2 (void) {
-    return (long) syscall(__NR_cs3013_syscall2, uPid, buffu);
+    return (long) syscall(__NR_cs3013_syscall2, &uPid, &buffu);
 }
 
 long testCall3 (void) {
@@ -35,14 +36,24 @@ int main (int argc, char* argv[]) {
     unsigned short input;
 
     if(argc == 2){
-	input = (short)atoi(argv[1]);
-	*uPid = &input;
-	testCall2();
-	return 0;
+	    input = (unsigned short)atoi(argv[1]);
+	    uPid = input;
+        
+	    testCall2();
+        
+        if(fromKernel == 0){
+            printf("PID %d does not esist.\n", uPid);
+            return 0;
+        }else{
+            puts("Printed ancestry tree to syslog");   
+        }
+    }
+    else if(argc == 1){
+        puts("Need to input PID");
+        return 0;
     }
     else {
-	puts("Usage: procAncestry <PID>");
-	return 0;
-    }
-    return 0;  
+	    puts("Usage: procAncestry <PID>");
+	    return 0;
+    }  
 }

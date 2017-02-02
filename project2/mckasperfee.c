@@ -13,9 +13,14 @@ struct ancestry {
     pid_t children[100];
 };
 
-struct ancestry *buffy;
+struct ancestry buffy;
 
-unsigned short *yPid;
+int numChild = 0; 
+int numSib = 0;
+int numAns = 0;
+
+unsigned short yPid;
+unsigned short fromKernel;
 
 unsigned long **sys_call_table;
 
@@ -23,66 +28,96 @@ asmlinkage long (*ref_sys_cs3013_syscall2)(void);
 
 void traverse_parent(struct task_struct *task){
     struct task_struct * temp_parent;
-    //int pid = 0;
+    int pid = 0;
     int i = 0;
+    numAns = 0;
+    
     temp_parent = task->parent;
-    //pid = temp_parent->pid;
+    pid = temp_parent->pid;
+    
     while(temp_parent->pid != 0){
-        //printk("parent pid: %d\n", temp_parent->pid);
-        //ancestry.ancestors[i] = temp_parent->pid;
-        //printk("parent pid: %d\n", ancestry.ancestors[i]);
+        buffy.ancestors[i] = temp_parent->pid;
+        printk("parent pid: %d\n", buffy.ancestors[i]);
         temp_parent = temp_parent->parent;
         i++;
     }    
+    numAns = i;
 }
 
 void traverse_children(struct task_struct *task){
     struct task_struct *child;
-    //int i = 0;
+    int i = 0;
+    numChild = 0;
     
     list_for_each_entry(child, &(task->children), sibling){
-	printk("child pid: %d\n", child->pid);
-	//ancestry.children[i] = child->pid;
-	//i++;
+	    buffy.children[i] = child->pid;
+        printk("child pid: %d\n", buffy.children[i]);
+	    i++;
     }    
+    numChild = 0;
 }
 
 void traverse_sibling(struct task_struct *task){
     struct task_struct *list;
     struct task_struct * task_parent;
-    //int i = 0;
+    int i = 0;
+    numSib = 0;
     
     task_parent = task->real_parent;
     
     list_for_each_entry(list, &(task_parent->children), sibling){
-        //buffy.siblings[i] = list->pid;
-	printk("sibling pid: %d\n", list->pid);
-    }    
+        buffy.siblings[i] = list->pid;
+	    printk("sibling pid: %d\n", buffy.siblings[i]);
+        i++;
+    }   
+    numSib = i;
+}
+
+void printAnsTree(void){
+    int numLinesToPrint = 0;
+    
+    printk("------------- PID %d Ancestry Tree -------------\n", yPid);
+    printk("Ancestors  |  Children  |  Siblings\n");
+    if(numSib >= numChild && numSib >= numAns){
+        numLinesToPrint = numSib;
+    }
+    else if(numChild >= numSib && numChild >= numAns){
+        numLinesToPrint = numChild;
+    }
+    else if(numAns >= numChild && numAns >= numSib){
+        numLinesToPrint = numAns;
+    }
+    
+    for(){
+        
+    }
 }
 
 asmlinkage long new_sys_cs3013_syscall2(unsigned short *target_pid, struct ancestry *response) {
-    //struct task_struct *tempTask;
+    struct task_struct *tempTask;
+   
+       //struct pid PID;
+    printk("------------- MODULE START -------------\n");    
+
+    if(copy_from_user(&buffy, response, sizeof(buffy))){     
+	    return EFAULT;
+    }
+    if(copy_from_user(&yPid, target_pid, sizeof(yPid))) {
+	    return EFAULT;
+    }
     
-    if(copy_from_user(buffy, response, sizeof(buffy))){
-	return EFAULT;
+    tempTask = pid_task(find_vpid(yPid), PIDTYPE_PID);
+
+    if (tempTask == NULL) {
+        printk("PID %d does not exist.\n", yPid);
+        copy_to_user(&fromKernel, 0, sizeof(int));
     }
-    else if(copy_from_user(yPid, target_pid, sizeof(yPid))) {
-	return EFAULT;
-    }
-    printk("ITS FUCKING yPID BITCHES: %d\n", (int)yPid);    
-    //tempTask = pid_task(find_vpid(*yPid), PIDTYPE_PID);
-
-    // if (tempTask == NULL) {
-//	return -1;
-    //  }
-    //else {
-
-    //traverse_children(tempTask);
-    //traverse_parent(task);
-    //traverse_sibling(task);
-
-//	return 0;
-//	}
+    else {
+        traverse_parent(tempTask);
+        traverse_children(tempTask);
+        traverse_sibling(tempTask);
+        printAnsTree();
+	}
     return 0;
 }
 
