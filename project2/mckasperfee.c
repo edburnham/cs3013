@@ -20,7 +20,7 @@ int numSib = 0;
 int numAns = 0;
 
 unsigned short yPid;
-unsigned short fromKernel;
+unsigned short zero;
 
 unsigned long **sys_call_table;
 
@@ -105,7 +105,8 @@ asmlinkage long new_sys_cs3013_syscall2(unsigned short *target_pid, struct ances
 
     if (tempTask == NULL) {
         printk("PID %d does not exist.\n", yPid);
-        copy_to_user(&fromKernel, 0, sizeof(int));
+        zero = 0;
+        copy_to_user(target_pid, &zero, sizeof(short));
         return 0;
     }
     else {

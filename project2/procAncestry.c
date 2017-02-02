@@ -18,7 +18,6 @@ struct ancestry{
 struct ancestry buffu;
 
 unsigned short uPid;
-unsigned short fromKernel;
 
 long testCall1 (void) {
     return (long) syscall(__NR_cs3013_syscall1);
@@ -41,8 +40,8 @@ int main (int argc, char* argv[]) {
         
 	    testCall2();
         
-        if(fromKernel == 0){
-            printf("PID %d does not esist.\n", uPid);
+        if(uPid == 0){
+            printf("PID %d does not esist.\n", input);
             return 0;
         }else{
             puts("Printed ancestry tree to syslog");   
