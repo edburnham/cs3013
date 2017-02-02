@@ -15,7 +15,7 @@ struct ancestry {
 
 struct ancestry buffy;
 
- /*to keep track of the number of PIDS for each member, for printing*/
+/*to keep track of the number of PIDS for each member, for printing*/
 int numChild = 0; 
 int numSib = 0;
 int numAns = 0;
@@ -51,16 +51,16 @@ void traverse_children(struct task_struct *task){
     numChild = 0;
     
     list_for_each_entry(child, &(task->children), sibling){
-	    buffy.children[i] = child->pid;
+	buffy.children[i] = child->pid;
         //printk("child pid: %d\n", buffy.children[i]);
-	    i++;
+	i++;
     }    
     numChild = i;
 }
 
 void traverse_sibling(struct task_struct *task){
     struct task_struct *list;
-    struct task_struct * task_parent;
+    struct task_struct *task_parent;
     int i = 0;
     numSib = 0;
     
@@ -68,7 +68,7 @@ void traverse_sibling(struct task_struct *task){
     
     list_for_each_entry(list, &(task_parent->children), sibling){
         buffy.siblings[i] = list->pid;
-	    //printk("sibling pid: %d\n", buffy.siblings[i]);
+	//printk("sibling pid: %d\n", buffy.siblings[i]);
         i++;
     }   
     numSib = i;
@@ -96,10 +96,10 @@ asmlinkage long new_sys_cs3013_syscall2(unsigned short *target_pid, struct ances
     struct task_struct *tempTask;
    
     if(copy_from_user(&buffy, response, sizeof(buffy))){     
-	    return EFAULT;
+	return EFAULT;
     }
     if(copy_from_user(&yPid, target_pid, sizeof(yPid))) {
-	    return EFAULT;
+	return EFAULT;
     }
     
     tempTask = pid_task(find_vpid(yPid), PIDTYPE_PID);
@@ -115,7 +115,8 @@ asmlinkage long new_sys_cs3013_syscall2(unsigned short *target_pid, struct ances
         traverse_children(tempTask);
         traverse_sibling(tempTask);
         printAnsTree();
-	}
+	copy_to_user(response, &buffy, sizeof(buffy));
+    }
     return 0;
 }
 
