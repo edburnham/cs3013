@@ -29,16 +29,13 @@ asmlinkage long (*ref_sys_cs3013_syscall2)(void);
 
 void traverse_parent(struct task_struct *task){
     struct task_struct * temp_parent;
-    int pid = 0;
     int i = 0;
     numAns = 0;
     
     temp_parent = task->parent;
-    pid = temp_parent->pid;
     
     while(temp_parent->pid != 0){
         buffy.ancestors[i] = temp_parent->pid;
-        //printk("parent pid: %d\n", buffy.ancestors[i]);
         temp_parent = temp_parent->parent;
         i++;
     }    
@@ -52,7 +49,6 @@ void traverse_children(struct task_struct *task){
     
     list_for_each_entry(child, &(task->children), sibling){
 	buffy.children[i] = child->pid;
-        //printk("child pid: %d\n", buffy.children[i]);
 	i++;
     }    
     numChild = i;
@@ -62,22 +58,26 @@ void traverse_sibling(struct task_struct *task){
     struct task_struct *list;
     struct task_struct *task_parent;
     int i = 0;
+    int ppid = 0;
     numSib = 0;
     
-    task_parent = task->real_parent;
+    task_parent = task->parent;
+    ppid = task_parent->pid;
     
-    list_for_each_entry(list, &(task_parent->children), sibling){
-        buffy.siblings[i] = list->pid;
-	//printk("sibling pid: %d\n", buffy.siblings[i]);
-        i++;
-    }   
-    numSib = i;
+    if(ppid > 0) {
+	list_for_each_entry(list, &(task_parent->children), sibling){
+	    buffy.siblings[i] = list->pid;
+	    i++;
+	}
+	numSib = i;
+    }
+    else {numSib = 0;}
 }
 
 void printAnsTree(void){
     int j, k, l;
     
-    printk("------------- PID %d Ancestry Tree -------------\n", yPid);
+    printk("-------- PID %d Ancestry Tree -------\n", yPid);
     printk("------------- Ancestors -------------\n");
     for(j = 0; j < numAns; j++){
         printk("Ancestor %d: %d\n", j + 1, buffy.ancestors[j]);
@@ -87,7 +87,7 @@ void printAnsTree(void){
         printk("Child %d: %d\n", k + 1, buffy.children[k]);
     }
     printk("------------- Siblings -------------\n");
-    for(l = 0; l < numChild; l++){
+    for(l = 0; l < numSib; l++){
         printk("Sibling %d: %d\n", l + 1, buffy.siblings[l]);
     }
 }
