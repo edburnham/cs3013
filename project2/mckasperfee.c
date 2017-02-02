@@ -5,18 +5,21 @@
 #include <linux/highmem.h>
 #include <linux/pid.h>
 #include <asm/unistd.h>
+#include <asm/errno.h>
 
-struct task_struct* taskStruct;
-
-struct ancestry{
+struct ancestry {
     pid_t ancestors[10];
     pid_t siblings[100];
     pid_t children[100];
-}ancestry;
+};
+
+struct ancestry *buffy;
+
+unsigned short *yPid;
 
 unsigned long **sys_call_table;
 
-asmlinkage long (*ref_sys_cs3013_syscall2)(unsigned short *target_pid, struct ancestry *response);
+asmlinkage long (*ref_sys_cs3013_syscall2)(void);
 
 void traverse_parent(struct task_struct *task){
     struct task_struct * temp_parent;
@@ -26,8 +29,8 @@ void traverse_parent(struct task_struct *task){
     //pid = temp_parent->pid;
     while(temp_parent->pid != 0){
         //printk("parent pid: %d\n", temp_parent->pid);
-        ancestry.ancestors[i] = temp_parent->pid;
-        printk("parent pid: %d\n", ancestry.ancestors[i]);
+        //ancestry.ancestors[i] = temp_parent->pid;
+        //printk("parent pid: %d\n", ancestry.ancestors[i]);
         temp_parent = temp_parent->parent;
         i++;
     }    
@@ -35,43 +38,51 @@ void traverse_parent(struct task_struct *task){
 
 void traverse_children(struct task_struct *task){
     struct task_struct *child;
-    int i = 0;
+    //int i = 0;
     
     list_for_each_entry(child, &(task->children), sibling){
-	    printk("child pid: %d\n", child->pid);
-        ancestry.children[i] = child->pid;
-        i++;
+	printk("child pid: %d\n", child->pid);
+	//ancestry.children[i] = child->pid;
+	//i++;
     }    
 }
 
 void traverse_sibling(struct task_struct *task){
     struct task_struct *list;
     struct task_struct * task_parent;
-    int i = 0;
+    //int i = 0;
     
     task_parent = task->real_parent;
     
     list_for_each_entry(list, &(task_parent->children), sibling){
-        ancestry.siblings[i] = list->pid;
-	    printk("sibling pid: %d\n", list->pid);
+        //buffy.siblings[i] = list->pid;
+	printk("sibling pid: %d\n", list->pid);
     }    
 }
 
 asmlinkage long new_sys_cs3013_syscall2(unsigned short *target_pid, struct ancestry *response) {
-    int pid = *target_pid;
+    //struct task_struct *tempTask;
     
-    struct task_struct *task = NULL;
-    
-    printk("\ntarget pid: %d\n", *target_pid);
-    
-    task = pid_task(find_vpid(pid), PIDTYPE_PID);
-    taskStruct = get_current();
-    
-    traverse_children(task);
-    traverse_parent(task);
-    traverse_sibling(task);
+    if(copy_from_user(buffy, response, sizeof(buffy))){
+	return EFAULT;
+    }
+    else if(copy_from_user(yPid, target_pid, sizeof(yPid))) {
+	return EFAULT;
+    }
+    printk("ITS FUCKING yPID BITCHES: %d\n", (int)yPid);    
+    //tempTask = pid_task(find_vpid(*yPid), PIDTYPE_PID);
 
-    printk(KERN_INFO "\"'Hello world?!' More like 'ProcAncestry!' tree!\" -- Dalek");
+    // if (tempTask == NULL) {
+//	return -1;
+    //  }
+    //else {
+
+    //traverse_children(tempTask);
+    //traverse_parent(task);
+    //traverse_sibling(task);
+
+//	return 0;
+//	}
     return 0;
 }
 
@@ -81,7 +92,7 @@ static unsigned long **find_sys_call_table(void) {
     while (offset < ULLONG_MAX) {
 	sct = (unsigned long **)offset;
 	if (sct[__NR_close] == (unsigned long *) sys_close) {
-	    printk(KERN_INFO "Interceptor: Found syscall table at address: 0x%02lX",
+	    printk(KERN_INFO "Interceptor: Found syscall table at address: 0x%02lX\n",
 		   (unsigned long) sct);
 	    return sct;
 	}
@@ -130,7 +141,7 @@ static int __init interceptor_start(void) {
     sys_call_table[__NR_cs3013_syscall2] = (unsigned long *)new_sys_cs3013_syscall2;
     enable_page_protection();
     /* And indicate the load was successful */
-    printk(KERN_INFO "Loaded interceptor!");
+    printk(KERN_INFO "Loaded interceptor!\n");
     return 0;
 }
 
@@ -142,7 +153,7 @@ static void __exit interceptor_end(void) {
     disable_page_protection();
     sys_call_table[__NR_cs3013_syscall2] = (unsigned long *)ref_sys_cs3013_syscall2;
     enable_page_protection();
-    printk(KERN_INFO "Unloaded interceptor!");
+    printk(KERN_INFO "Unloaded interceptor!\n");
 }
 MODULE_LICENSE("GPL");
 module_init(interceptor_start);

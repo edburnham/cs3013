@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/wait.h>
+#include <errno.h>
 
 // These values MUST match the unistd_32.h modifications:
 #define __NR_cs3013_syscall1 377
@@ -10,24 +10,39 @@
 #define __NR_cs3013_syscall3 379
 
 struct ancestry{
-	pid_t ancestors[10];
-	pid_t siblings[100];
-	pid_t children[100];
+    pid_t ancestors[10];
+    pid_t siblings[100];
+    pid_t children[100];
 };
 
-long testCall2 (unsigned short *target_pid, struct ancestry *response) {
-    return (long) syscall(__NR_cs3013_syscall2, &target_pid, response);
+struct ancestry *buffu;
+
+unsigned short *uPid;
+
+long testCall1 (void) {
+    return (long) syscall(__NR_cs3013_syscall1);
+}
+
+long testCall2 (void) {
+    return (long) syscall(__NR_cs3013_syscall2, uPid, buffu);
+}
+
+long testCall3 (void) {
+    return (long) syscall(__NR_cs3013_syscall3);
 }
 
 int main (int argc, char* argv[]) {
-	struct ancestry *response = NULL;
+    unsigned short input;
 
-	if(argc == 2){
-		testCall2((unsigned short *)atoi(argv[1]), response);
-		return 0;
-	}else{
-		puts("Exiting: need to pass only 1 agument: <PID>");
-		return 0;
-	}
-	return 0;  
+    if(argc == 2){
+	input = (short)atoi(argv[1]);
+	*uPid = &input;
+	testCall2();
+	return 0;
+    }
+    else {
+	puts("Usage: procAncestry <PID>");
+	return 0;
+    }
+    return 0;  
 }
