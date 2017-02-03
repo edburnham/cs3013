@@ -32,10 +32,10 @@ void traverse_parent(struct task_struct *task){
     int i = 0;
     numAns = 0;
     
-    temp_parent = task->parent;
+    temp_parent = task->parent;//temp task struct to move between parents
     
     while(temp_parent->pid != 0){
-        buffy.ancestors[i] = temp_parent->pid;
+        buffy.ancestors[i] = temp_parent->pid;//grab pid
         temp_parent = temp_parent->parent;
         i++;
     }    
@@ -48,8 +48,8 @@ void traverse_children(struct task_struct *task){
     numChild = 0;
     
     list_for_each_entry(child, &(task->children), sibling){
-	buffy.children[i] = child->pid;
-	i++;
+		buffy.children[i] = child->pid;//grab pid
+		i++;
     }    
     numChild = i;
 }
@@ -65,16 +65,17 @@ void traverse_sibling(struct task_struct *task){
     ppid = task_parent->pid;
     
     if(ppid > 0) {
-	list_for_each_entry(list, &(task_parent->children), sibling){
-	    buffy.siblings[i] = list->pid;
-	    i++;
+		list_for_each_entry(list, &(task_parent->children), sibling){
+			buffy.siblings[i] = list->pid;//grab pid
+			i++;
+		}
+		numSib = i;//set the number of siblings for printinf function
+    }else {
+		numSib = 0;
 	}
-	numSib = i;
-    }
-    else {numSib = 0;}
 }
 
-void printAnsTree(void){
+void printAnsTree(void){//print Ancestry Tree Function
     int j, k, l;
     
     printk("-------- PID %d Ancestry Tree -------\n", yPid);
@@ -96,26 +97,26 @@ asmlinkage long new_sys_cs3013_syscall2(unsigned short *target_pid, struct ances
     struct task_struct *tempTask;
    
     if(copy_from_user(&buffy, response, sizeof(buffy))){     
-	return EFAULT;
+		return EFAULT;
     }
     if(copy_from_user(&yPid, target_pid, sizeof(yPid))) {
-	return EFAULT;
+		return EFAULT;
     }
     
     tempTask = pid_task(find_vpid(yPid), PIDTYPE_PID);
 
-    if (tempTask == NULL) {
+    if (tempTask == NULL) {//if PID doesn't exist, inform the kernel side and send a flag to the user side so the user can be informed
         printk("PID %d does not exist.\n", yPid);
         zero = 0;
-        copy_to_user(target_pid, &zero, sizeof(short));
+        copy_to_user(target_pid, &zero, sizeof(short));//send flag to user side
         return 0;
     }
-    else {
+    else {//If PID does exist, traverse the task struct
         traverse_parent(tempTask);
         traverse_children(tempTask);
         traverse_sibling(tempTask);
-        printAnsTree();
-	copy_to_user(response, &buffy, sizeof(buffy));
+        printAnsTree();//then print the tree
+		copy_to_user(response, &buffy, sizeof(buffy));//copy the ancestor struct to the user side
     }
     return 0;
 }
