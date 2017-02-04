@@ -26,6 +26,13 @@ Compile using: make all (compiles LKM)
 	       make pans (compliles procAncestry.c, the user-land file)
 	    OR sudo ./install.sh 
 	       install.sh executes make clean, all, test, rmmod, and insmod 
+	       
+	       test.sh: 
+	       		runs procAncestry with various PIDS making sure correct errors print to stdout
+	       		
+	       test_procAncestry.c: 
+	       		creates over 100 sibling processes to make sure the kernel side would not overfill the ancestry sibling array, verified in syslog
+	       		printed user side ancestry tree to confirm proper passing from kernel side
 
 Run user-land program: ./procAncestry <PID> < test.txt
 Open syslog: tail /var/log/syslog to see the ancestry	
