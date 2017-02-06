@@ -57,28 +57,32 @@ int main(int argc, char** argv){
 	pthread_t nodes[numNodes];
 	nodeData nodeInfo[numNodes];//data struct for each thread
 	
-	for(i = 0; i < numNodes; i++){
-		nodeInfo[i].ID_self = rand() % UINT_MAX;//set node Id
-		nodeInfo[i].x_coor = rand() % 99;
-		nodeInfo[i].y_coor = rand() % 99;
-		nodeInfo[i].dwell_duration = 1;
-		nodeInfo[i].dwell_probability = 1;
-		nodeInfo[i].transmission_time = 1;
-		nodeInfo[i].talk_window_time = 1;
-		nodeInfo[i].talk_probability = 1;
-		if(i < num_noisemakers){
-			nodeInfo[i].is_noisemaker = 1;
-			nodeInfo[i].dwell_noisemakers = 1;
-			nodeInfo[i].dwell_probability_noisemakers = 1;
-		}else{
-			nodeInfo[i].is_noisemaker = 0;
-			nodeInfo[i].dwell_noisemakers = 0;
-			nodeInfo[i].dwell_probability_noisemakers = 0;
+	if(argc == 3){
+		for(i = 0; i < numNodes; i++){
+			nodeInfo[i].ID_self = rand() % UINT_MAX;//set node Id
+			nodeInfo[i].x_coor = rand() % 99;
+			nodeInfo[i].y_coor = rand() % 99;
+			nodeInfo[i].dwell_duration = 1;
+			nodeInfo[i].dwell_probability = 1;
+			nodeInfo[i].transmission_time = 1;
+			nodeInfo[i].talk_window_time = 1;
+			nodeInfo[i].talk_probability = 1;
+			if(i < num_noisemakers){//make desired amount of nodes noisemakers
+				nodeInfo[i].is_noisemaker = 1;
+				nodeInfo[i].dwell_noisemakers = 1;
+				nodeInfo[i].dwell_probability_noisemakers = 1;
+			}else{
+				nodeInfo[i].is_noisemaker = 0;
+				nodeInfo[i].dwell_noisemakers = 0;
+				nodeInfo[i].dwell_probability_noisemakers = 0;
+			}
+			if((checkError = pthread_create(&nodes[i], NULL, nodeProcess, &nodeInfo[i]))){
+				fprintf(stderr, "Failed to create thread with pthread_create.\n");
+				return 0;
+			}
 		}
-		if((checkError = pthread_create(&nodes[i], NULL, nodeProcess, &nodeInfo[i]))){
-			fprintf(stderr, "Failed to create thread with pthread_create.\n");
-			return 0;
-		}
+	}else{
+		puts("Correct usage: ./mac <number of nodes> <number of noise makers>");
 	}
 	return 0;
 }
