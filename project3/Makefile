@@ -1,10 +1,10 @@
 all: mac
  
 mac: mac.o
-	gcc -Wall mac.o -o mac
+	gcc -Wall -pthread mac.o -o mac
 
 mac.o: mac.c
-	gcc -Wall -c mac.c
+	gcc -Wall -pthread -c mac.c
 	
 clean:
 	rm -f mac.o mac 

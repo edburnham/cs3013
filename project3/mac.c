@@ -9,25 +9,35 @@
 #include <limits.h>
 
 #define SEED_VALUE 10
-
-double num_noisemakers = 0;
-double dwell_noisemakers = 0;
-double dwell_probability_noisemakers = 0;
+#define NUM_NODES 4
+#define NUM_NOISE_MAKERS 0
 
 /*random messages to send*/
-char* mess[10] = {"hello", "goodbye", "cs3013", "orange", "purple", "michael!", "edward!", "johnson!", "watson!", "robinson!"};
+char* mess[15] = {"hello", "goodbye", "cs3013", "orange", "purple", "michael!", "edward!", "johnson!", "watson!", "danger!", "stranger!", "things!", "DOOM!", "highlander!", "whatThe!"};
+int numNodes = 0;
+
+pthread_mutex_t channel_1lock;
+pthread_mutex_t channel_6lock;
+pthread_mutex_t channel_11lock;
 
 typedef struct message{
-	int sourceID;
+	unsigned int nodeID;
 	char* transMess;
 	int channel;
 	int x_coor;
 	int y_coor;
-}message;
+}messageData;
+
+/*channels*/
+messageData channel_1[1000];
+messageData channel_6[1000];
+messageData channel_11[1000];
+
+messageData nodeCache[NUM_NODES];
 
 /*thread data*/
 typedef struct nodeData{
-	unsigned int ID_self;
+	unsigned int nodeID;
 	int is_noisemaker;
 	int x_coor;
 	int y_coor;
@@ -41,48 +51,84 @@ typedef struct nodeData{
 }nodeData;
 
 /*thread process*/
-void* nodeProcess(void* stuff){
-	nodeData* data = (nodeData*)stuff;
-	/*initializes coordinates for node*/
+void* nodeProcess(void* nodeInfo){
+	nodeData* data = (nodeData*)nodeInfo;
+	char* message;
+	unsigned int IDs_inrange[100];
+	char* messageBuff[100];
+	int i;
 	
-	return 0;
+	for(i = 0; i < numNodes; i++){
+		if((nodeCache[i].x_coor < 5 && data->x_coor < 5) && (nodeCache[i].y_coor < 5 && data->y_coor < 5) && (data->y_coor < (nodeCache[i].y_coor + 5))){
+			IDs_inrange[i] = nodeCache[i].nodeID;//in range
+		}
+		else if((nodeCache[i].x_coor < 5 && data->x_coor < 5) && (nodeCache[i].y_coor > 95 && data->y_coor > 95) && (data->y_coor < (nodeCache[i].y_coor + 5))){
+			IDs_inrange[i] = nodeCache[i].nodeID;//in range
+		}
+		else if((nodeCache[i].x_coor > 95 && data->x_coor > 95) && (nodeCache[i].y_coor < 5 && data->y_coor < 5) && (data->y_coor > (nodeCache[i].y_coor - 5))){
+			IDs_inrange[i] = nodeCache[i].nodeID;//in range
+		}
+		else if((nodeCache[i].x_coor > 95 && data->x_coor > 95) && (nodeCache[i].y_coor > 95 && data->y_coor > 95) && (data->y_coor > (nodeCache[i].y_coor - 5))){
+			IDs_inrange[i] = nodeCache[i].nodeID;//in range
+		}
+		else if((data->x_coor <= nodeCache[i].x_coor + 5) && (data->x_coor <= nodeCache[i].x_coor - 5)){
+			IDs_inrange[i] = nodeCache[i].nodeID;//in range
+		}
+	}
+	
+	//pthread_mutex_lock(&channel_1lock);
+	//pthread_mutex_unlock(&channel_1lock)
+	
+	
+	while(1){
+		
+		
+		message = strdup(mess[rand() % 14]); 
+	}
+	
+	pthread_exit(NULL);
 }
 
 int main(int argc, char** argv){
 	srand((unsigned int)SEED_VALUE);
-	int numNodes = atoi(argv[1]);
-	int num_noisemakers = atoi(argv[2]);
 	int i, checkError;
 	
-	pthread_t nodes[numNodes];
-	nodeData nodeInfo[numNodes];//data struct for each thread
+	pthread_t nodes[NUM_NODES];
+	nodeData nodeInfo[NUM_NODES];//data struct for each thread
 	
 	if(argc == 3){
-		for(i = 0; i < numNodes; i++){
-			nodeInfo[i].ID_self = rand() % UINT_MAX;//set node Id
+		for(i = 0; i < NUM_NODES; i++){
+			nodeInfo[i].nodeID = rand() % UINT_MAX;//set node Id, 4 bytes
+			nodeCache[i].nodeID = nodeInfo[i].nodeID;
 			nodeInfo[i].x_coor = rand() % 99;
 			nodeInfo[i].y_coor = rand() % 99;
-			nodeInfo[i].dwell_duration = 1;
-			nodeInfo[i].dwell_probability = 1;
-			nodeInfo[i].transmission_time = 1;
-			nodeInfo[i].talk_window_time = 1;
-			nodeInfo[i].talk_probability = 1;
-			if(i < num_noisemakers){//make desired amount of nodes noisemakers
+			nodeCache[i].x_coor = nodeInfo[i].x_coor;
+			nodeCache[i].y_coor = nodeInfo[i].y_coor;
+			nodeInfo[i].dwell_duration = 1.0;
+			nodeInfo[i].dwell_probability = 1.0;
+			nodeInfo[i].transmission_time = 1.0;
+			nodeInfo[i].talk_window_time = 1.0;
+			nodeInfo[i].talk_probability = 1.0;
+			if(i < NUM_NOISE_MAKERS){//make desired amount of nodes noisemakers
 				nodeInfo[i].is_noisemaker = 1;
-				nodeInfo[i].dwell_noisemakers = 1;
-				nodeInfo[i].dwell_probability_noisemakers = 1;
+				nodeInfo[i].dwell_noisemakers = 1.0;
+				nodeInfo[i].dwell_probability_noisemakers = 1.0;
 			}else{
 				nodeInfo[i].is_noisemaker = 0;
-				nodeInfo[i].dwell_noisemakers = 0;
-				nodeInfo[i].dwell_probability_noisemakers = 0;
+				nodeInfo[i].dwell_noisemakers = 1.0;
+				nodeInfo[i].dwell_probability_noisemakers = 1.0;
 			}
 			if((checkError = pthread_create(&nodes[i], NULL, nodeProcess, &nodeInfo[i]))){
-				fprintf(stderr, "Failed to create thread with pthread_create.\n");
+				fprintf(stderr, "Failed to create thread with pthread_create().\n");
 				return 0;
 			}
 		}
+		for (i = 0; i < numNodes; ++i) {
+    		pthread_join(nodes[i], NULL);
+  		}
 	}else{
 		puts("Correct usage: ./mac <number of nodes> <number of noise makers>");
 	}
+	
 	return 0;
 }
