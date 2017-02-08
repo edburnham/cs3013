@@ -9,7 +9,7 @@
 #include <limits.h>
 
 #define SEED_VALUE 10
-#define NUM_NODES 4
+#define NUM_NODES 2
 #define NUM_NOISE_MAKERS 0
 
 /*random messages to send*/
@@ -53,13 +53,14 @@ typedef struct nodeData{
 /*thread process*/
 void* nodeProcess(void* nodeInfo){
 	nodeData* data = (nodeData*)nodeInfo;
-	char* message;
-	unsigned int IDs_inrange[100];
-	char* messageBuff[100];
+	//char* message;
+	unsigned int IDs_inrange[100] = {0};
+	//char* messageBuff[100];
 	int i;
-	
+	printf("0 ID: %d\n1ID: %d\n", nodeCache[0].nodeID, nodeCache[1].nodeID);
 	for(i = 0; i < numNodes; i++){
-		if((nodeCache[i].x_coor < 5 && data->x_coor < 5) && (nodeCache[i].y_coor < 5 && data->y_coor < 5) && (data->y_coor < (nodeCache[i].y_coor + 5))){
+		//(nodeCache[i].x_coor < 5 && data->x_coor < 5) && (nodeCache[i].y_coor < 5 && data->y_coor < 5) && (data->y_coor < (nodeCache[i].y_coor + 5))
+		if((data->x_coor <= nodeCache[i].x_coor + 5) && (data->x_coor >= nodeCache[i].x_coor - 5) && (data->y_coor <= nodeCache[i].y_coor + 5) && (data->y_coor >= nodeCache[i].y_coor - 5)){
 			IDs_inrange[i] = nodeCache[i].nodeID;//in range
 		}
 		else if((nodeCache[i].x_coor < 5 && data->x_coor < 5) && (nodeCache[i].y_coor > 95 && data->y_coor > 95) && (data->y_coor < (nodeCache[i].y_coor + 5))){
@@ -71,20 +72,23 @@ void* nodeProcess(void* nodeInfo){
 		else if((nodeCache[i].x_coor > 95 && data->x_coor > 95) && (nodeCache[i].y_coor > 95 && data->y_coor > 95) && (data->y_coor > (nodeCache[i].y_coor - 5))){
 			IDs_inrange[i] = nodeCache[i].nodeID;//in range
 		}
-		else if((data->x_coor <= nodeCache[i].x_coor + 5) && (data->x_coor <= nodeCache[i].x_coor - 5)){
+		/*else if(){
 			IDs_inrange[i] = nodeCache[i].nodeID;//in range
-		}
+		}*/
 	}
 	
+	for(i = 0; i < 2; i++){
+		printf("threadID: %d -- ID in range: %d\n", data->nodeID, IDs_inrange[i]);
+	}
 	//pthread_mutex_lock(&channel_1lock);
 	//pthread_mutex_unlock(&channel_1lock)
 	
-	
+	/*
 	while(1){
 		
 		
-		message = strdup(mess[rand() % 14]); 
-	}
+		//message = strdup(mess[rand() % 14]); 
+	}*/
 	
 	pthread_exit(NULL);
 }
@@ -96,14 +100,24 @@ int main(int argc, char** argv){
 	pthread_t nodes[NUM_NODES];
 	nodeData nodeInfo[NUM_NODES];//data struct for each thread
 	
-	if(argc == 3){
+	if(argc == 1){
 		for(i = 0; i < NUM_NODES; i++){
-			nodeInfo[i].nodeID = rand() % UINT_MAX;//set node Id, 4 bytes
-			nodeCache[i].nodeID = nodeInfo[i].nodeID;
-			nodeInfo[i].x_coor = rand() % 99;
-			nodeInfo[i].y_coor = rand() % 99;
+			//nodeInfo[i].nodeID = rand() % UINT_MAX;//set node Id, 4 bytes
+			nodeInfo[i].nodeID = i;
+			nodeCache[i].nodeID = nodeInfo[i].nodeID;//line stay for testing and non testing
+			
+			/*non-testing mode*/
+			//nodeInfo[i].x_coor = rand() % 99;
+			//nodeInfo[i].y_coor = rand() % 99;
+			//nodeCache[i].x_coor = nodeInfo[i].x_coor;
+			//nodeCache[i].y_coor = nodeInfo[i].y_coor;
+			
+			/*testing mode*/
+			nodeInfo[i].x_coor = 5*i + 20;
+			nodeInfo[i].y_coor = 20; 
 			nodeCache[i].x_coor = nodeInfo[i].x_coor;
 			nodeCache[i].y_coor = nodeInfo[i].y_coor;
+			
 			nodeInfo[i].dwell_duration = 1.0;
 			nodeInfo[i].dwell_probability = 1.0;
 			nodeInfo[i].transmission_time = 1.0;
@@ -116,18 +130,22 @@ int main(int argc, char** argv){
 			}else{
 				nodeInfo[i].is_noisemaker = 0;
 				nodeInfo[i].dwell_noisemakers = 1.0;
-				nodeInfo[i].dwell_probability_noisemakers = 1.0;
+				nodeInfo[i].dwell_probability_noisemakers = 1.0;	
 			}
+			printf("ID: %d\n", nodeInfo[i].nodeID);
+			//puts("sfgsdfhswetg!!!!!");
 			if((checkError = pthread_create(&nodes[i], NULL, nodeProcess, &nodeInfo[i]))){
 				fprintf(stderr, "Failed to create thread with pthread_create().\n");
 				return 0;
 			}
+			//puts("hhhh");
 		}
-		for (i = 0; i < numNodes; ++i) {
+		
+		for (i = 0; i < NUM_NODES; ++i) {
     		pthread_join(nodes[i], NULL);
   		}
 	}else{
-		puts("Correct usage: ./mac <number of nodes> <number of noise makers>");
+		puts("Correct usage: ./mac");
 	}
 	
 	return 0;
