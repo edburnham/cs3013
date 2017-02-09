@@ -9,12 +9,11 @@
 #include <limits.h>
 
 #define SEED_VALUE 10
-#define NUM_NODES 2
+#define NUM_NODES 100
 #define NUM_NOISE_MAKERS 0
 
 /*random messages to send*/
 char* mess[15] = {"hello", "goodbye", "cs3013", "orange", "purple", "michael!", "edward!", "johnson!", "watson!", "danger!", "stranger!", "things!", "DOOM!", "highlander!", "whatThe!"};
-int numNodes = 0;
 
 pthread_mutex_t channel_1lock;
 pthread_mutex_t channel_6lock;
@@ -57,28 +56,34 @@ void* nodeProcess(void* nodeInfo){
 	unsigned int IDs_inrange[100] = {0};
 	//char* messageBuff[100];
 	int i;
-	printf("0 ID: %d\n1ID: %d\n", nodeCache[0].nodeID, nodeCache[1].nodeID);
-	for(i = 0; i < numNodes; i++){
-		//(nodeCache[i].x_coor < 5 && data->x_coor < 5) && (nodeCache[i].y_coor < 5 && data->y_coor < 5) && (data->y_coor < (nodeCache[i].y_coor + 5))
-		if((data->x_coor <= nodeCache[i].x_coor + 5) && (data->x_coor >= nodeCache[i].x_coor - 5) && (data->y_coor <= nodeCache[i].y_coor + 5) && (data->y_coor >= nodeCache[i].y_coor - 5)){
-			IDs_inrange[i] = nodeCache[i].nodeID;//in range
-		}
-		else if((nodeCache[i].x_coor < 5 && data->x_coor < 5) && (nodeCache[i].y_coor > 95 && data->y_coor > 95) && (data->y_coor < (nodeCache[i].y_coor + 5))){
-			IDs_inrange[i] = nodeCache[i].nodeID;//in range
-		}
-		else if((nodeCache[i].x_coor > 95 && data->x_coor > 95) && (nodeCache[i].y_coor < 5 && data->y_coor < 5) && (data->y_coor > (nodeCache[i].y_coor - 5))){
-			IDs_inrange[i] = nodeCache[i].nodeID;//in range
-		}
-		else if((nodeCache[i].x_coor > 95 && data->x_coor > 95) && (nodeCache[i].y_coor > 95 && data->y_coor > 95) && (data->y_coor > (nodeCache[i].y_coor - 5))){
-			IDs_inrange[i] = nodeCache[i].nodeID;//in range
-		}
-		/*else if(){
-			IDs_inrange[i] = nodeCache[i].nodeID;//in range
-		}*/
+	printf("data node ID: %d\n", data->nodeID);
+	//printf("0 ID: %d\n1 ID: %d\n", nodeCache[0].nodeID, nodeCache[1].nodeID);
+	for(i = 0; i < NUM_NODES; i++){// && (data->y_coor <= nodeCache[i].y_coor + 5) && (data->y_coor >= nodeCache[i].y_coor - 5)
+		
+			//printf("xcoor: %d ycoor: %d\n", nodeCache[i].x_coor, nodeCache[i].y_coor);
+			if((data->x_coor <= nodeCache[i].x_coor + 5) && (data->x_coor >= nodeCache[i].x_coor - 5)&& (data->y_coor <= nodeCache[i].y_coor + 5) && (data->y_coor >= nodeCache[i].y_coor - 5)){
+				IDs_inrange[i] = nodeCache[i].nodeID;//in range
+			}
+			else if((nodeCache[i].x_coor < 5 && data->x_coor < 5) && (nodeCache[i].y_coor > 95 && data->y_coor > 95) && (data->y_coor < (nodeCache[i].y_coor + 5))){
+				IDs_inrange[i] = nodeCache[i].nodeID;//in range
+			}
+			else if((nodeCache[i].x_coor > 95 && data->x_coor > 95) && (nodeCache[i].y_coor < 5 && data->y_coor < 5) && (data->y_coor > (nodeCache[i].y_coor - 5))){
+				IDs_inrange[i] = nodeCache[i].nodeID;//in range
+			}
+			else if((nodeCache[i].x_coor > 95 && data->x_coor > 95) && (nodeCache[i].y_coor > 95 && data->y_coor > 95) && (data->y_coor > (nodeCache[i].y_coor - 5))){
+				IDs_inrange[i] = nodeCache[i].nodeID;//in range
+			}
+			else if((nodeCache[i].x_coor < 5 && data->x_coor < 5) && (nodeCache[i].y_coor < 5 && data->y_coor < 5) && (data->y_coor < (nodeCache[i].y_coor + 5))){
+				IDs_inrange[i] = nodeCache[i].nodeID;//in range
+			}
+
 	}
 	
-	for(i = 0; i < 2; i++){
-		printf("threadID: %d -- ID in range: %d\n", data->nodeID, IDs_inrange[i]);
+	for(i = 0; i < NUM_NODES; i++){
+		if(IDs_inrange[i] != 0){
+				printf("threadID: %d -- ID in range: %d\n", data->nodeID, IDs_inrange[i]);
+
+		}
 	}
 	//pthread_mutex_lock(&channel_1lock);
 	//pthread_mutex_unlock(&channel_1lock)
@@ -94,7 +99,7 @@ void* nodeProcess(void* nodeInfo){
 }
 
 int main(int argc, char** argv){
-	srand((unsigned int)SEED_VALUE);
+	srand(time(NULL));
 	int i, checkError;
 	
 	pthread_t nodes[NUM_NODES];
@@ -102,21 +107,21 @@ int main(int argc, char** argv){
 	
 	if(argc == 1){
 		for(i = 0; i < NUM_NODES; i++){
-			//nodeInfo[i].nodeID = rand() % UINT_MAX;//set node Id, 4 bytes
-			nodeInfo[i].nodeID = i;
+			nodeInfo[i].nodeID = rand() % UINT_MAX;//set node Id, 4 bytes
+			//nodeInfo[i].nodeID = i;//for testing
 			nodeCache[i].nodeID = nodeInfo[i].nodeID;//line stay for testing and non testing
 			
-			/*non-testing mode*/
-			//nodeInfo[i].x_coor = rand() % 99;
-			//nodeInfo[i].y_coor = rand() % 99;
-			//nodeCache[i].x_coor = nodeInfo[i].x_coor;
-			//nodeCache[i].y_coor = nodeInfo[i].y_coor;
-			
-			/*testing mode*/
-			nodeInfo[i].x_coor = 5*i + 20;
-			nodeInfo[i].y_coor = 20; 
+			/*non-testing coordinate generation*/
+			nodeInfo[i].x_coor = rand() % 99;
+			nodeInfo[i].y_coor = rand() % 99;
 			nodeCache[i].x_coor = nodeInfo[i].x_coor;
 			nodeCache[i].y_coor = nodeInfo[i].y_coor;
+			
+			/*testing mode coordinate generation
+			nodeInfo[i].x_coor = 95 + 5*i ;
+			nodeInfo[i].y_coor = 5*i; 
+			nodeCache[i].x_coor = nodeInfo[i].x_coor;
+			nodeCache[i].y_coor = nodeInfo[i].y_coor;*/
 			
 			nodeInfo[i].dwell_duration = 1.0;
 			nodeInfo[i].dwell_probability = 1.0;
@@ -132,7 +137,7 @@ int main(int argc, char** argv){
 				nodeInfo[i].dwell_noisemakers = 1.0;
 				nodeInfo[i].dwell_probability_noisemakers = 1.0;	
 			}
-			printf("ID: %d\n", nodeInfo[i].nodeID);
+			//printf("ID: %d\n", nodeInfo[i].nodeID);
 			//puts("sfgsdfhswetg!!!!!");
 			if((checkError = pthread_create(&nodes[i], NULL, nodeProcess, &nodeInfo[i]))){
 				fprintf(stderr, "Failed to create thread with pthread_create().\n");
