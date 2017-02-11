@@ -16,7 +16,11 @@
 #define EXP_DURATION 10
 
 /*random messages to send*/
-char* mess[15] = {"hello!", "goodbye!", "cs3013!", "orange!", "purple!", "michael!", "edward!", "johnson!", "watson!", "danger!", "stranger!", "things!", "DOOM!", "highlander!", "whatThe!"};
+char* mess[25] = {"hello!", "goodbye!", "cs3013!", "orange!", "purple!", \
+				  "michael!", "edward!", "johnson!", "watson!", "danger!", \
+				  "stranger!", "things!", "DOOM!", "highlander!", "whatThe!" \
+				  "mutual!", "exclusion!", "friend!", "semaphore!", "great!" \
+				  "distrbed!", "demented!", "torn!", "weird!", "why!"};
 
 sem_t channel_1lock;
 sem_t channel_6lock;
@@ -138,7 +142,7 @@ void* nodeProcess(void* nodeInfo){
 			}
 			else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
 				messageData newMessage;
-				strcpy(newMessage.transMess, mess[rand() % 14]);	
+				strcpy(newMessage.transMess, mess[rand() % 24]);	
 				newMessage.nodeID = data->nodeID;
 				sprintf(uniqueMess,"%d", newMessage.nodeID);
 				strncat(newMessage.transMess, uniqueMess, strlen(uniqueMess) + strlen(newMessage.transMess));
@@ -170,7 +174,7 @@ void* nodeProcess(void* nodeInfo){
 			}
 			else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
 				messageData newMessage;
-				strcpy(newMessage.transMess, mess[rand() % 14]);
+				strcpy(newMessage.transMess, mess[rand() % 24]);
 				newMessage.nodeID = data->nodeID;
 				sprintf(uniqueMess,"%d", newMessage.nodeID);
 				strncat(newMessage.transMess, uniqueMess, strlen(uniqueMess) + strlen(newMessage.transMess));
@@ -202,7 +206,7 @@ void* nodeProcess(void* nodeInfo){
 			}
 			else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
 				messageData newMessage;
-				strcpy(newMessage.transMess, mess[rand() % 14]);
+				strcpy(newMessage.transMess, mess[rand() % 24]);
 				newMessage.nodeID = data->nodeID;
 				sprintf(uniqueMess,"%d", newMessage.nodeID);
 				strncat(newMessage.transMess, uniqueMess, strlen(uniqueMess) + strlen(newMessage.transMess));
