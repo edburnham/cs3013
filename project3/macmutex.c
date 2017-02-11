@@ -267,12 +267,13 @@ void* nodeProcess(void* nodeInfo){
 						}
 						if(sawMess_ch1 != 1){
 							memcpy(&messageBuffer[messageBuffCount], &channel_1[j], sizeof(messageData));   
-							memset(&channel_1[j], 0, sizeof(messageData));
 							memcpy(&logBuffer[logBuffCount], &messageBuffer[messageBuffCount], sizeof(messageData));
 							currentTime = time(NULL);
 							strcpy(logBuffer[logBuffCount].time, ctime(&currentTime));
 							logBuffCount++;
-							channel_1count--;
+							if(--channel_1count == -1){
+								channel_1count = 999;	
+							}
 							if(++messageBuffCount == 100){//wrap index
 								messageBuffCount = 0;
 							}
@@ -296,12 +297,13 @@ void* nodeProcess(void* nodeInfo){
 						}
 						if(sawMess_ch6 != 1){
 							memcpy(&messageBuffer[messageBuffCount], &channel_6[j], sizeof(messageData));   
-							memset(&channel_6[j], 0, sizeof(messageData));
 							memcpy(&logBuffer[logBuffCount], &messageBuffer[messageBuffCount], sizeof(messageData));
 							currentTime = time(NULL);
 							strcpy(logBuffer[logBuffCount].time, ctime(&currentTime));
 							logBuffCount++;
-							channel_1count--;
+							if(--channel_6count == -1){
+								channel_6count = 999;	
+							}
 							if(++messageBuffCount == 100){//wrap index
 								messageBuffCount = 0;
 							}
@@ -326,13 +328,14 @@ void* nodeProcess(void* nodeInfo){
 						}
 						if(sawMess_ch11 != 1){
 							memcpy(&messageBuffer[messageBuffCount], &channel_11[j], sizeof(messageData));   
-							memset(&channel_11[j], 0, sizeof(messageData));
 							memcpy(&logBuffer[logBuffCount], &messageBuffer[messageBuffCount], sizeof(messageData));
 							currentTime = time(NULL);
 							strcpy(logBuffer[logBuffCount].time, ctime(&currentTime));
 							logBuffCount++;
 							//printf("local message: %s\n", messageBuffer[messageBuffCount].transMess);
-							channel_1count--;
+							if(--channel_11count == -1){
+								channel_11count = 999;	
+							}
 							if(++messageBuffCount == 100){//wrap index
 								messageBuffCount = 0;
 							}
@@ -387,12 +390,6 @@ int main(int argc, char** argv){
 			nodeInfo[i].y_coor = random() % 99;
 			nodeCache[i].x_coor = nodeInfo[i].x_coor;
 			nodeCache[i].y_coor = nodeInfo[i].y_coor;
-
-			/*testing mode coordinate generation
-			nodeInfo[i].x_coor = 95 + 5*i ;
-			nodeInfo[i].y_coor = 5*i; 
-			nodeCache[i].x_coor = nodeInfo[i].x_coor;
-			nodeCache[i].y_coor = nodeInfo[i].y_coor;*/
 
 			nodeInfo[i].dwell_duration = 1000000;
 			nodeInfo[i].dwell_probability = 1;
