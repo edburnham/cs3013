@@ -13,7 +13,7 @@
 
 #define NUM_NODES 200
 #define NUM_NOISE_MAKERS 0
-#define EXP_DURATION 10
+#define EXP_DURATION 100
 
 /*random messages to send*/
 char* mess[25] = {"hello!", "goodbye!", "cs3013!", "orange!", "purple!",\
@@ -381,6 +381,7 @@ int main(int argc, char** argv){
 	pthread_mutex_init(&channel_11lock, NULL);
 
 	if(argc == 1){
+		puts("Running Simulation...");
 		for(i = 0; i < NUM_NODES; i++){
 			nodeInfo[i].nodeID = (random() % UINT_MAX) + 1;//set node Id, 4 bytes
 			nodeCache[i].nodeID = nodeInfo[i].nodeID;//line stay for testing and non testing
@@ -419,6 +420,7 @@ int main(int argc, char** argv){
 		pthread_mutex_destroy(&channel_1lock);
 		pthread_mutex_destroy(&channel_6lock);
 		pthread_mutex_destroy(&channel_11lock);
+		puts("Simulation Complete...");
 	}else{
 		puts("Correct usage: ./macmutex <no arguments>");
 	}
