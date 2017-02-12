@@ -69,7 +69,7 @@ void* nodeProcess(void* nodeInfo){
 	
 	int messageBuffCount = 0;
 	int logBuffCount = 0;
-	int channel = random() % 2;
+	int channel = random() % 3;
 	int totalTime = 0;
 	int numNodesInRange = 0;
 	int i, j, k;
@@ -131,19 +131,20 @@ void* nodeProcess(void* nodeInfo){
 		}
 	}
 	
-	/*MAJORITY OF WORKLOAD*/
+	/**************************************MAJORITY OF WORKLOAD**************************************/
 	while(totalTime != EXP_DURATION){//main process that runs for exp_duration, total time is incremented every dwell_duration
 		
 		if(data->is_noisemaker == 1){
 			if(((random() % 100) + 1) > data->dwell_probability_noisemakers){//decide whether to switch channels if noisemaker
-				channel = random() % 2;
+				channel = random() % 3;
 			}
 		}else{
 			if(((random() % 100) + 1) > data->dwell_probability){//decide whether to switch channels
-				channel = random() % 2;
+				channel = random() % 3;
 			}
 		}
 		
+		/***********************************************Writing to Channels***********************************************/
 		if(channel == 0){//channel 1
 			usleep(data->talk_window_time);//simulating the consideration of sending a message
 			if(data->is_noisemaker == 1){
@@ -153,7 +154,7 @@ void* nodeProcess(void* nodeInfo){
 			}
 			else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
 				messageData newMessage;
-				strcpy(newMessage.transMess, mess[random() % 24]);	
+				strcpy(newMessage.transMess, mess[random() % 25]);	
 				newMessage.nodeID = data->nodeID;
 				sprintf(uniqueMess,"%d", newMessage.nodeID);
 				strncat(newMessage.transMess, uniqueMess, strlen(uniqueMess) + strlen(newMessage.transMess));
@@ -188,7 +189,7 @@ void* nodeProcess(void* nodeInfo){
 			}
 			else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
 				messageData newMessage;
-				strcpy(newMessage.transMess, mess[random() % 24]);
+				strcpy(newMessage.transMess, mess[random() % 25]);
 				newMessage.nodeID = data->nodeID;
 				sprintf(uniqueMess,"%d", newMessage.nodeID);
 				strncat(newMessage.transMess, uniqueMess, strlen(uniqueMess) + strlen(newMessage.transMess));
@@ -223,7 +224,7 @@ void* nodeProcess(void* nodeInfo){
 			}
 			else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
 				messageData newMessage;
-				strcpy(newMessage.transMess, mess[random() % 24]);
+				strcpy(newMessage.transMess, mess[random() % 25]);
 				newMessage.nodeID = data->nodeID;
 				sprintf(uniqueMess,"%d", newMessage.nodeID);
 				strncat(newMessage.transMess, uniqueMess, strlen(uniqueMess) + strlen(newMessage.transMess));
@@ -253,7 +254,7 @@ void* nodeProcess(void* nodeInfo){
 		
 		memset(uniqueMess, 0, sizeof(uniqueMess));//reset unique concatenated message
 		
-		/*reading from each channel*/ 
+		/****************************************reading from each channel****************************************/ 
 		localChannelCount1 = channel_1count;//channel 1
 		for(i = 0; i < numNodesInRange; i++){
 			if(nodesInRange[i].nodeID != 0){            
@@ -387,8 +388,8 @@ int main(int argc, char** argv){
 			nodeCache[i].nodeID = nodeInfo[i].nodeID;//line stay for testing and non testing
 
 			/*non-testing coordinate generation*/
-			nodeInfo[i].x_coor = random() % 99;
-			nodeInfo[i].y_coor = random() % 99;
+			nodeInfo[i].x_coor = random() % 100;
+			nodeInfo[i].y_coor = random() % 100;
 			nodeCache[i].x_coor = nodeInfo[i].x_coor;
 			nodeCache[i].y_coor = nodeInfo[i].y_coor;
 
@@ -420,6 +421,7 @@ int main(int argc, char** argv){
 		pthread_mutex_destroy(&channel_1lock);
 		pthread_mutex_destroy(&channel_6lock);
 		pthread_mutex_destroy(&channel_11lock);
+		printf(" %d   %d   %d\n", channel_1count, channel_6count, channel_11count);
 		puts("Simulation Complete...");
 	}else{
 		puts("Correct usage: ./macmutex <no arguments>");
