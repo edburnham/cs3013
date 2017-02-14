@@ -400,7 +400,7 @@ int main(int argc, char** argv){
 			nodeInfo[i].dwell_probability = 1;
 			nodeInfo[i].transmission_time = 100;
 			nodeInfo[i].talk_window_time = 100;
-			nodeInfo[i].talk_probability = 99;
+			nodeInfo[i].talk_probability = 50;
 			if(i < NUM_NOISE_MAKERS){//make desired amount of nodes noisemakers
 				nodeInfo[i].is_noisemaker = 1;
 				nodeInfo[i].dwell_noisemakers = (random() % 2000) + 1000;

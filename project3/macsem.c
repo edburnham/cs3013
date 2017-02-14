@@ -11,7 +11,7 @@
 #include <sys/types.h>
 #include <semaphore.h>
 
-#define NUM_NODES 200
+#define NUM_NODES 20
 #define NUM_NOISE_MAKERS 0
 #define EXP_DURATION 20 //Experiment duration ~ dwell duration * EXP_DURATION
 #define CHANNEL_SIZE 4000 //number of messages each channel can hold
@@ -375,7 +375,8 @@ void* nodeProcess(void* nodeInfo){
 
 int main(int argc, char** argv){
 	srand(time(NULL));
-	int i, checkError;
+	int i, j, checkError;
+	int ind = 0;
 
 	pthread_t nodes[NUM_NODES];
 	nodeData nodeInfo[NUM_NODES];//data struct for each thread
@@ -389,7 +390,6 @@ int main(int argc, char** argv){
 		for(i = 0; i < NUM_NODES; i++){
 			nodeInfo[i].nodeID = (random() % UINT_MAX) + 1;//set node Id, 4 bytes
 			nodeCache[i].nodeID = nodeInfo[i].nodeID;//line stay for testing and non testing
-//printf("%d\n",nodeInfo[i].nodeID);
 			/*non-testing coordinate generation*/
 			nodeInfo[i].x_coor = random() % 100;
 			nodeInfo[i].y_coor = random() % 100;
@@ -400,7 +400,7 @@ int main(int argc, char** argv){
 			nodeInfo[i].dwell_probability = 1;
 			nodeInfo[i].transmission_time = 100;
 			nodeInfo[i].talk_window_time = 100;
-			nodeInfo[i].talk_probability = 99;
+			nodeInfo[i].talk_probability = 50;
 			if(i < NUM_NOISE_MAKERS){//make desired amount of nodes noisemakers
 				nodeInfo[i].is_noisemaker = 1;
 				nodeInfo[i].dwell_noisemakers = (random() % 2000) + 1000;
@@ -417,6 +417,27 @@ int main(int argc, char** argv){
 			}
 		}
 
+		for(i = 1; i <= 100; i++){
+			printf("%d", i);
+			for(j = 1; j <= 100; j++){
+				if(ind >= NUM_NODES){
+					putchar('-');
+				}else if((nodeCache[i - 1].x_coor == j) && (nodeCache[i - 1].y_coor == i)){
+					
+					ind++;
+					putchar('X');
+				}else{
+					putchar('-');
+				}
+			}
+			//ind++;
+			putchar('\n');		
+			
+			if(j == 99 && i == 99){
+				break;
+			}
+		}
+		
 		for (i = 0; i < NUM_NODES; ++i) {
 			pthread_join(nodes[i], NULL);
 		}
