@@ -13,7 +13,9 @@
 
 #define NUM_NODES 200
 #define NUM_NOISE_MAKERS 0
-#define EXP_DURATION 100
+#define EXP_DURATION 20 //Experiment duration ~ dwell duration * EXP_DURATION
+#define CHANNEL_SIZE 4000 //number of messages each channel can hold
+#define MESSAGE_BUFF_SIZE 300
 
 /*random messages to send*/
 char* mess[25] = {"hello!", "goodbye!", "cs3013!", "orange!", "purple!",\
@@ -38,9 +40,9 @@ typedef struct message{
 }messageData;
 
 /*channels*/
-messageData channel_1[1000];
-messageData channel_6[1000];
-messageData channel_11[1000];
+messageData channel_1[CHANNEL_SIZE];
+messageData channel_6[CHANNEL_SIZE];
+messageData channel_11[CHANNEL_SIZE];
 int channel_1count = 0;
 int channel_6count = 0;
 int channel_11count = 0;
@@ -90,47 +92,47 @@ void* nodeProcess(void* nodeInfo){
 		int y_coor;
 	}inRange;
 
-	messageData messageBuffer[100];
+	messageData messageBuffer[200];
 	messageData logBuffer[500];//messages to write to buffer
 
 	inRange nodesInRange[100];
 
 	/*Locator algorithm - checks which nodes are in rage of each other*/
 	for(i = 0; i < NUM_NODES; i++){
-		if(data->nodeID != nodeCache[i].nodeID){	
+		if(data->nodeID != nodeCache[i].nodeID){//ignore self	
 			if((data->x_coor <= nodeCache[i].x_coor + 5) && (data->x_coor >= nodeCache[i].x_coor - 5) && (data->y_coor <= nodeCache[i].y_coor + 5) && (data->y_coor >= nodeCache[i].y_coor - 5)){
-				nodesInRange[i].nodeID = nodeCache[i].nodeID;//in range
-				nodesInRange[i].x_coor = nodeCache[i].x_coor;
-				nodesInRange[i].y_coor = nodeCache[i].y_coor;
+				nodesInRange[numNodesInRange].nodeID = nodeCache[i].nodeID;//in range
+				nodesInRange[numNodesInRange].x_coor = nodeCache[i].x_coor;
+				nodesInRange[numNodesInRange].y_coor = nodeCache[i].y_coor;
 				numNodesInRange++;
 			}
 			else if((nodeCache[i].x_coor < 5 && data->x_coor < 5) && (nodeCache[i].y_coor > 95 && data->y_coor > 95) && (data->y_coor < (nodeCache[i].y_coor + 5))){
-				nodesInRange[i].nodeID = nodeCache[i].nodeID;//in range
-				nodesInRange[i].x_coor = nodeCache[i].x_coor;
-				nodesInRange[i].y_coor = nodeCache[i].y_coor;
+				nodesInRange[numNodesInRange].nodeID = nodeCache[i].nodeID;//in range
+				nodesInRange[numNodesInRange].x_coor = nodeCache[i].x_coor;
+				nodesInRange[numNodesInRange].y_coor = nodeCache[i].y_coor;
 				numNodesInRange++;
 			}
 			else if((nodeCache[i].x_coor > 95 && data->x_coor > 95) && (nodeCache[i].y_coor < 5 && data->y_coor < 5) && (data->y_coor > (nodeCache[i].y_coor - 5))){
-				nodesInRange[i].nodeID = nodeCache[i].nodeID;//in range
-				nodesInRange[i].x_coor = nodeCache[i].x_coor;
-				nodesInRange[i].y_coor = nodeCache[i].y_coor;
+				nodesInRange[numNodesInRange].nodeID = nodeCache[i].nodeID;//in range
+				nodesInRange[numNodesInRange].x_coor = nodeCache[i].x_coor;
+				nodesInRange[numNodesInRange].y_coor = nodeCache[i].y_coor;
 				numNodesInRange++;
 			}
 			else if((nodeCache[i].x_coor > 95 && data->x_coor > 95) && (nodeCache[i].y_coor > 95 && data->y_coor > 95) && (data->y_coor > (nodeCache[i].y_coor - 5))){
-				nodesInRange[i].nodeID = nodeCache[i].nodeID;//in range
-				nodesInRange[i].x_coor = nodeCache[i].x_coor;
-				nodesInRange[i].y_coor = nodeCache[i].y_coor;
+				nodesInRange[numNodesInRange].nodeID = nodeCache[i].nodeID;//in range
+				nodesInRange[numNodesInRange].x_coor = nodeCache[i].x_coor;
+				nodesInRange[numNodesInRange].y_coor = nodeCache[i].y_coor;
 				numNodesInRange++;
 			}
 			else if((nodeCache[i].x_coor < 5 && data->x_coor < 5) && (nodeCache[i].y_coor < 5 && data->y_coor < 5) && (data->y_coor < (nodeCache[i].y_coor + 5))){
-				nodesInRange[i].nodeID = nodeCache[i].nodeID;//in range
-				nodesInRange[i].x_coor = nodeCache[i].x_coor;
-				nodesInRange[i].y_coor = nodeCache[i].y_coor;
+				nodesInRange[numNodesInRange].nodeID = nodeCache[i].nodeID;//in range
+				nodesInRange[numNodesInRange].x_coor = nodeCache[i].x_coor;
+				nodesInRange[numNodesInRange].y_coor = nodeCache[i].y_coor;
 				numNodesInRange++;
 			}
 		}
 	}
-	
+
 	/**************************************MAJORITY OF WORKLOAD**************************************/
 	while(totalTime != EXP_DURATION){//main process that runs for exp_duration, total time is incremented every dwell_duration
 		if(data->is_noisemaker == 1){
@@ -142,7 +144,7 @@ void* nodeProcess(void* nodeInfo){
 				channel = random() % 3;
 			}
 		}
-		
+
 		/***********************************************Writing to Channels***********************************************/
 		if(channel == 0){//channel 1
 			usleep(data->talk_window_time);//simulating the consideration of sending a message
@@ -163,7 +165,7 @@ void* nodeProcess(void* nodeInfo){
 				sem_wait(&channel_1lock);
 					memcpy(&channel_1[channel_1count], &newMessage, sizeof(messageData));
 					usleep(data->transmission_time);//simulating transmission time
-					if(++channel_1count == 1000){
+					if(++channel_1count == CHANNEL_SIZE){
 						channel_1count = 0;
 					}
 				sem_post(&channel_1lock);    
@@ -171,12 +173,12 @@ void* nodeProcess(void* nodeInfo){
 				sem_wait(&channel_1lock);
 					usleep(data->transmission_time);//simulating transmission time
 					memcpy(&channel_1[channel_1count], &messageBuffer[messageBuffCount], sizeof(messageData));
-					if(++channel_1count == 1000){
+					if(++channel_1count == CHANNEL_SIZE){
 						channel_1count = 0;
 					}
 				sem_post(&channel_1lock);
 				if(--messageBuffCount == -1){
-					messageBuffCount = 99;
+					messageBuffCount = MESSAGE_BUFF_SIZE - 1;
 				}
 			}  
 		}else if(channel == 1){//channel 6
@@ -188,7 +190,7 @@ void* nodeProcess(void* nodeInfo){
 			}
 			else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
 				messageData newMessage;
-				strcpy(newMessage.transMess, mess[random() % 24]);
+				strcpy(newMessage.transMess, mess[random() % 25]);
 				newMessage.nodeID = data->nodeID;
 				sprintf(uniqueMess,"%d", newMessage.nodeID);
 				strncat(newMessage.transMess, uniqueMess, strlen(uniqueMess) + strlen(newMessage.transMess));
@@ -198,7 +200,7 @@ void* nodeProcess(void* nodeInfo){
 				sem_wait(&channel_6lock);
 					memcpy(&channel_6[channel_6count], &newMessage, sizeof(messageData));
 					usleep(data->transmission_time);//simulating transmission time
-					if(++channel_6count == 1000){
+					if(++channel_6count == CHANNEL_SIZE){
 						channel_6count = 0;
 					}
 				sem_post(&channel_6lock);    
@@ -206,12 +208,12 @@ void* nodeProcess(void* nodeInfo){
 				sem_wait(&channel_6lock);
 					usleep(data->transmission_time);//simulating transmission time
 					memcpy(&channel_6[channel_6count], &messageBuffer[messageBuffCount], sizeof(messageData));
-					if(++channel_6count == 1000){
+					if(++channel_6count == CHANNEL_SIZE){
 						channel_6count = 0;
 					}
 				sem_post(&channel_6lock);
 				if(--messageBuffCount == -1){
-					messageBuffCount = 99;
+					messageBuffCount = MESSAGE_BUFF_SIZE - 1;
 				}
 			}
 		}else if(channel == 2){//channel 11
@@ -223,7 +225,7 @@ void* nodeProcess(void* nodeInfo){
 			}
 			else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
 				messageData newMessage;
-				strcpy(newMessage.transMess, mess[random() % 24]);
+				strcpy(newMessage.transMess, mess[random() % 25]);
 				newMessage.nodeID = data->nodeID;
 				sprintf(uniqueMess,"%d", newMessage.nodeID);
 				strncat(newMessage.transMess, uniqueMess, strlen(uniqueMess) + strlen(newMessage.transMess));
@@ -233,7 +235,7 @@ void* nodeProcess(void* nodeInfo){
 				sem_wait(&channel_11lock);
 					memcpy(&channel_11[channel_11count], &newMessage, sizeof(messageData));
 					usleep(data->transmission_time);//simulating transmission time
-					if(++channel_11count == 1000){
+					if(++channel_11count == CHANNEL_SIZE){
 						channel_11count = 0;
 					}
 				sem_post(&channel_11lock);    
@@ -241,106 +243,105 @@ void* nodeProcess(void* nodeInfo){
 				sem_wait(&channel_11lock);
 					usleep(data->transmission_time);//simulating transmission time
 					memcpy(&channel_11[channel_11count], &messageBuffer[messageBuffCount], sizeof(messageData));
-					if(++channel_11count == 1000){
+					if(++channel_11count == CHANNEL_SIZE){
 						channel_11count = 0;
 					}
 				sem_post(&channel_11lock);
 				if(--messageBuffCount == -1){
-					messageBuffCount = 99;
+					messageBuffCount = MESSAGE_BUFF_SIZE - 1;
 				}
 			}
 		}
 		
 		memset(uniqueMess, 0, sizeof(uniqueMess));//reset unique concatenated message
 		
-		/****************************************reading from each channel****************************************/ 
+		/****************************************Reading from Channels****************************************/ 
+		//algorithm is the same for each channel
 		localChannelCount1 = channel_1count;//channel 1
-		for(i = 0; i < numNodesInRange; i++){
-			if(nodesInRange[i].nodeID != 0){            
+		for(i = 0; i < numNodesInRange; i++){//for number of nodes in range
+			if(nodesInRange[i].nodeID != 0){ //ignore IDs that are 0           
 				for(j = 0; j < localChannelCount1; j++){
 					sem_wait(&channel_1lock);
-					if((nodesInRange[i].nodeID == channel_1[j].nodeID) && (channel_1[j].transMess != NULL)){						
-						for(k = 0; k < messageBuffCount; k++){
+					if((nodesInRange[i].nodeID == channel_1[j].nodeID) && (channel_1[j].transMess != NULL)){//if ID of message in channel matches node in range, and the channel has a message						
+						for(k = 0; k < messageBuffCount; k++){//check if the message has been seen
 							if(!strcmp(channel_1[j].transMess, messageBuffer[k].transMess)){//true if already have seen message
-								sawMess_ch1 = 1;
+								sawMess_ch1 = 1;//set flag if message has been seen
 							}
 						}
-						if(sawMess_ch1 != 1){
+						if(sawMess_ch1 != 1){//if haven't already seen message, take it
 							memcpy(&messageBuffer[messageBuffCount], &channel_1[j], sizeof(messageData));   
 							memcpy(&logBuffer[logBuffCount], &messageBuffer[messageBuffCount], sizeof(messageData));
 							currentTime = time(NULL);
-							strcpy(logBuffer[logBuffCount].time, ctime(&currentTime));
+							strcpy(logBuffer[logBuffCount].time, ctime(&currentTime));//get recieved time of day
 							logBuffCount++;
-							if(--channel_1count == -1){
-								channel_1count = 999;	
+							if(--channel_1count == -1){//wrapping index
+								channel_1count = CHANNEL_SIZE - 1;	
 							}
-							if(++messageBuffCount == 100){//wrap index
+							if(++messageBuffCount == MESSAGE_BUFF_SIZE){//wrapping index
 								messageBuffCount = 0;
 							}
 						}		
-						sawMess_ch1 = 0;	
+						sawMess_ch1 = 0;//reset saw-message flag	
 					} 
 					sem_post(&channel_1lock);
 				} 
 			}
 		}
 		localChannelCount6 = channel_6count;//channel 6
-		for(i = 0; i < numNodesInRange; i++){
-			if(nodesInRange[i].nodeID != 0){ 
+		for(i = 0; i < numNodesInRange; i++){//for number of nodes in range
+			if(nodesInRange[i].nodeID != 0){ //ignore IDs that are 0 
 				for(j = 0; j < localChannelCount6; j++){
 					sem_wait(&channel_6lock);
-					if((nodesInRange[i].nodeID == channel_6[j].nodeID) && (channel_6[j].transMess != NULL)){
-						for(k = 0; k < messageBuffCount; k++){
+					if((nodesInRange[i].nodeID == channel_6[j].nodeID) && (channel_6[j].transMess != NULL)){//if ID of message in channel matches node in range, and the channel has a message
+						for(k = 0; k < messageBuffCount; k++){//check if the message has been seen
 							if(!strcmp(channel_6[j].transMess, messageBuffer[k].transMess)){//true if already have seen message
-								sawMess_ch6 = 1;
+								sawMess_ch6 = 1;//set flag if message has been seen
 							}
 						}
-						if(sawMess_ch6 != 1){
+						if(sawMess_ch6 != 1){//if haven't already seen message, take it
 							memcpy(&messageBuffer[messageBuffCount], &channel_6[j], sizeof(messageData));   
 							memcpy(&logBuffer[logBuffCount], &messageBuffer[messageBuffCount], sizeof(messageData));
 							currentTime = time(NULL);
-							strcpy(logBuffer[logBuffCount].time, ctime(&currentTime));
+							strcpy(logBuffer[logBuffCount].time, ctime(&currentTime));//get recieved time of day
 							logBuffCount++;
-							if(--channel_6count == -1){
-								channel_6count = 999;	
+							if(--channel_6count == -1){//wrapping index
+								channel_6count = CHANNEL_SIZE - 1;	
 							}
-							if(++messageBuffCount == 100){//wrap index
+							if(++messageBuffCount == MESSAGE_BUFF_SIZE){//wrapping index
 								messageBuffCount = 0;
 							}
 						}		
-						sawMess_ch6 = 0;
+						sawMess_ch6 = 0;//reset saw-message flag
 					} 
 					sem_post(&channel_6lock);
 				}
 			}
 		}
 		localChannelCount11 = channel_11count;//channel 11
-		for(i = 0; i < numNodesInRange; i++){
-			if(nodesInRange[i].nodeID != 0){ 
+		for(i = 0; i < numNodesInRange; i++){//for number of nodes in range
+			if(nodesInRange[i].nodeID != 0){ //ignore IDs that are 0 
 				for(j = 0; j < localChannelCount11; j++){
 					sem_wait(&channel_11lock);
-					if((nodesInRange[i].nodeID == channel_11[j].nodeID) && (channel_11[j].transMess != NULL)){
-						//printf("channel message11: %s\n", channel_11[j].transMess);
-						for(k = 0; k < messageBuffCount; k++){
+					if((nodesInRange[i].nodeID == channel_11[j].nodeID) && (channel_11[j].transMess != NULL)){//if ID of message in channel matches node in range, and the channel has a message
+						for(k = 0; k < messageBuffCount; k++){//check if the message has been seen
 							if(!strcmp(channel_11[j].transMess, messageBuffer[k].transMess)){//true if already have seen message
-								sawMess_ch6 = 1;
+								sawMess_ch11 = 1;//set flag if message has been seen
 							}
 						}
-						if(sawMess_ch11 != 1){
+						if(sawMess_ch11 != 1){//if haven't already seen message, take it
 							memcpy(&messageBuffer[messageBuffCount], &channel_11[j], sizeof(messageData));   
 							memcpy(&logBuffer[logBuffCount], &messageBuffer[messageBuffCount], sizeof(messageData));
 							currentTime = time(NULL);
-							strcpy(logBuffer[logBuffCount].time, ctime(&currentTime));
+							strcpy(logBuffer[logBuffCount].time, ctime(&currentTime));//get recieved time of day
 							logBuffCount++;
-							//printf("local message: %s\n", messageBuffer[messageBuffCount].transMess);
-							if(--channel_11count == -1){
-								channel_11count = 999;	
+							if(--channel_11count == -1){//wrapping index
+								channel_11count = CHANNEL_SIZE - 1;	
 							}
-							if(++messageBuffCount == 100){//wrap index
+							if(++messageBuffCount == MESSAGE_BUFF_SIZE){//wrapping index
 								messageBuffCount = 0;
 							}
 						}		
-						sawMess_ch11 = 0;					
+						sawMess_ch11 = 0;//reset saw-message flag 					
 					} 
 					sem_post(&channel_11lock);
 				}
@@ -356,8 +357,11 @@ void* nodeProcess(void* nodeInfo){
 		sprintf(filename, "%d", data->nodeID);
 		strncat(filename, ".txt", sizeof(".txt"));
 		logFile = fopen(filename, "a+");
-		//printf("log count: %d ID: %d\n", logBuffCount, data->nodeID);
 		fprintf(logFile, "Log for node %d: with coordinates: x = %d, y = %d\n", data->nodeID, data->x_coor, data->y_coor);
+		fprintf(logFile, "Nodes In Rage:\n");
+		for(i = 0; i< numNodesInRange; i++){
+			fprintf(logFile, "\t%d x = %d, y = %d\n", nodesInRange[i].nodeID, nodesInRange[i].x_coor, nodesInRange[i].y_coor);
+		}
 		fprintf(logFile, "Saw messages from:\n");
 		for(i = 0; i < logBuffCount; i++){
 			fprintf(logFile, "ID: %d\n \tMessage: %s\n \tx = %d\n \ty = %d\n \tChannel = %d\n \tTime Recieved: %s", logBuffer[i].nodeID, logBuffer[i].transMess, logBuffer[i].x_coor,\
@@ -385,7 +389,7 @@ int main(int argc, char** argv){
 		for(i = 0; i < NUM_NODES; i++){
 			nodeInfo[i].nodeID = (random() % UINT_MAX) + 1;//set node Id, 4 bytes
 			nodeCache[i].nodeID = nodeInfo[i].nodeID;//line stay for testing and non testing
-
+//printf("%d\n",nodeInfo[i].nodeID);
 			/*non-testing coordinate generation*/
 			nodeInfo[i].x_coor = random() % 100;
 			nodeInfo[i].y_coor = random() % 100;
@@ -420,7 +424,6 @@ int main(int argc, char** argv){
 		sem_destroy(&channel_1lock);
 		sem_destroy(&channel_6lock);
 		sem_destroy(&channel_11lock);
-		printf(" %d   %d   %d\n", channel_1count, channel_6count, channel_11count);
 		puts("Simulation Complete...");
 	}else{
 		puts("Correct usage: ./macsem <no arguments>");
