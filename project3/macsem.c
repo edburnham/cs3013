@@ -423,7 +423,6 @@ int main(int argc, char** argv){
 		}
 
 		/*Print grid to stdout*/
-		puts("X = node in simulation");
 		for(i = 1; i <= 100; i++){
 			if(i < 10){
 				printf("%d ", i);
