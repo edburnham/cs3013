@@ -11,7 +11,7 @@
 #include <sys/types.h>
 #include <semaphore.h>
 
-#define NUM_NODES 20
+#define NUM_NODES 10
 #define NUM_NOISE_MAKERS 0
 #define EXP_DURATION 20 //Experiment duration ~ dwell duration * EXP_DURATION
 #define CHANNEL_SIZE 4000 //number of messages each channel can hold
@@ -375,9 +375,14 @@ void* nodeProcess(void* nodeInfo){
 
 int main(int argc, char** argv){
 	srand(time(NULL));
-	int i, j, checkError;
+	int i, j, k, checkError;
 	int ind = 0;
-
+	int putX = 0;
+	int nodeNum[NUM_NODES];//for printing grid
+	int nodeid[NUM_NODES];//for printing grid
+	int nodeX_coor[NUM_NODES];
+	int nodeY_coor[NUM_NODES];
+	
 	pthread_t nodes[NUM_NODES];
 	nodeData nodeInfo[NUM_NODES];//data struct for each thread
 
@@ -417,24 +422,43 @@ int main(int argc, char** argv){
 			}
 		}
 
+		/*Print grid to stdout*/
+		puts("X = node in simulation");
 		for(i = 1; i <= 100; i++){
-			printf("%d", i);
+			if(i < 10){
+				printf("%d ", i);
+			}else{
+				printf("%d", i);
+			}
 			for(j = 1; j <= 100; j++){
-				if(ind >= NUM_NODES){
-					putchar('-');
-				}else if((nodeCache[i - 1].x_coor == j) && (nodeCache[i - 1].y_coor == i)){
-					
-					ind++;
-					putchar('X');
-				}else{
+				for(k = 0; k < NUM_NODES; k++){
+					if((nodeCache[k].x_coor == j) && (nodeCache[k].y_coor == i)){	
+						nodeNum[ind] = ind + 1;
+						nodeid[ind] = nodeCache[k].nodeID;
+						nodeX_coor[ind] = nodeCache[k].x_coor;
+						nodeY_coor[ind] = nodeCache[k].y_coor;
+						ind++;
+						printf("%d", ind);
+						putX = 1;
+					}					
+				}
+				if(putX != 1){
 					putchar('-');
 				}
+				putX = 0;
 			}
 			putchar('\n');					
-			if(j == 99 && i == 99){
+			if((j == 100 && i == 100) || (ind >= NUM_NODES)){
 				break;
 			}
 		}
+		
+		/*print node IDs*/
+		puts("node #: node ID, x, y");
+		for(i = 0; i < NUM_NODES; i++){
+			printf("%d: %d, x = %d, y = %d\n", nodeNum[i], nodeid[i], nodeX_coor[i], nodeY_coor[i]);
+		}
+		puts("Running Simulation...");
 		
 		for (i = 0; i < NUM_NODES; ++i) {
 			pthread_join(nodes[i], NULL);
