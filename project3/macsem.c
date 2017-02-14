@@ -430,9 +430,7 @@ int main(int argc, char** argv){
 					putchar('-');
 				}
 			}
-			//ind++;
-			putchar('\n');		
-			
+			putchar('\n');					
 			if(j == 99 && i == 99){
 				break;
 			}
