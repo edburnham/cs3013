@@ -11,9 +11,9 @@
 #include <sys/types.h>
 #include <semaphore.h>
 
-#define NUM_NODES 200
-#define NUM_NOISE_MAKERS 0
-#define EXP_DURATION 20 //Experiment duration ~ dwell duration * EXP_DURATION
+#define NUM_NODES 350
+#define NUM_NOISE_MAKERS 50
+#define EXP_DURATION 20 
 #define CHANNEL_SIZE 4000 //number of messages each channel can hold
 #define MESSAGE_BUFF_SIZE 300
 
@@ -47,7 +47,7 @@ int channel_1count = 0;
 int channel_6count = 0;
 int channel_11count = 0;
 
-messageData nodeCache[NUM_NODES];//for determining who is in range of who
+messageData nodeCache[NUM_NODES];//storing all the nodes
 
 /*thread data*/
 typedef struct nodeData{
@@ -74,6 +74,7 @@ void* nodeProcess(void* nodeInfo){
 	int channel = random() % 3;
 	int totalTime = 0;
 	int numNodesInRange = 0;
+	int reBroadInd = 0;
 	int i, j, k;
 	int localChannelCount1 = 0;
 	int localChannelCount6 = 0;
@@ -92,7 +93,7 @@ void* nodeProcess(void* nodeInfo){
 		int y_coor;
 	}inRange;
 
-	messageData messageBuffer[100];
+	messageData messageBuffer[200];
 	messageData logBuffer[500];//messages to write to buffer
 
 	inRange nodesInRange[100];
@@ -105,26 +106,22 @@ void* nodeProcess(void* nodeInfo){
 				nodesInRange[numNodesInRange].x_coor = nodeCache[i].x_coor;
 				nodesInRange[numNodesInRange].y_coor = nodeCache[i].y_coor;
 				numNodesInRange++;
-			}
-			else if((nodeCache[i].x_coor < 5 && data->x_coor < 5) && (nodeCache[i].y_coor > 95 && data->y_coor > 95) && (data->y_coor < (nodeCache[i].y_coor + 5))){
+			}else if((nodeCache[i].x_coor < 5 && data->x_coor < 5) && (nodeCache[i].y_coor > 95 && data->y_coor > 95) && (data->y_coor < (nodeCache[i].y_coor + 5))){
 				nodesInRange[numNodesInRange].nodeID = nodeCache[i].nodeID;//in range
 				nodesInRange[numNodesInRange].x_coor = nodeCache[i].x_coor;
 				nodesInRange[numNodesInRange].y_coor = nodeCache[i].y_coor;
 				numNodesInRange++;
-			}
-			else if((nodeCache[i].x_coor > 95 && data->x_coor > 95) && (nodeCache[i].y_coor < 5 && data->y_coor < 5) && (data->y_coor > (nodeCache[i].y_coor - 5))){
+			}else if((nodeCache[i].x_coor > 95 && data->x_coor > 95) && (nodeCache[i].y_coor < 5 && data->y_coor < 5) && (data->y_coor > (nodeCache[i].y_coor - 5))){
 				nodesInRange[numNodesInRange].nodeID = nodeCache[i].nodeID;//in range
 				nodesInRange[numNodesInRange].x_coor = nodeCache[i].x_coor;
 				nodesInRange[numNodesInRange].y_coor = nodeCache[i].y_coor;
 				numNodesInRange++;
-			}
-			else if((nodeCache[i].x_coor > 95 && data->x_coor > 95) && (nodeCache[i].y_coor > 95 && data->y_coor > 95) && (data->y_coor > (nodeCache[i].y_coor - 5))){
+			}else if((nodeCache[i].x_coor > 95 && data->x_coor > 95) && (nodeCache[i].y_coor > 95 && data->y_coor > 95) && (data->y_coor > (nodeCache[i].y_coor - 5))){
 				nodesInRange[numNodesInRange].nodeID = nodeCache[i].nodeID;//in range
 				nodesInRange[numNodesInRange].x_coor = nodeCache[i].x_coor;
 				nodesInRange[numNodesInRange].y_coor = nodeCache[i].y_coor;
 				numNodesInRange++;
-			}
-			else if((nodeCache[i].x_coor < 5 && data->x_coor < 5) && (nodeCache[i].y_coor < 5 && data->y_coor < 5) && (data->y_coor < (nodeCache[i].y_coor + 5))){
+			}else if((nodeCache[i].x_coor < 5 && data->x_coor < 5) && (nodeCache[i].y_coor < 5 && data->y_coor < 5) && (data->y_coor < (nodeCache[i].y_coor + 5))){
 				nodesInRange[numNodesInRange].nodeID = nodeCache[i].nodeID;//in range
 				nodesInRange[numNodesInRange].x_coor = nodeCache[i].x_coor;
 				nodesInRange[numNodesInRange].y_coor = nodeCache[i].y_coor;
@@ -132,10 +129,9 @@ void* nodeProcess(void* nodeInfo){
 			}
 		}
 	}
-	
+
 	/**************************************MAJORITY OF WORKLOAD**************************************/
 	while(totalTime != EXP_DURATION){//main process that runs for exp_duration, total time is incremented every dwell_duration
-		
 		if(data->is_noisemaker == 1){
 			if(((random() % 100) + 1) > data->dwell_probability_noisemakers){//decide whether to switch channels if noisemaker
 				channel = random() % 3;
@@ -145,7 +141,7 @@ void* nodeProcess(void* nodeInfo){
 				channel = random() % 3;
 			}
 		}
-		
+
 		/***********************************************Writing to Channels***********************************************/
 		if(channel == 0){//channel 1
 			usleep(data->talk_window_time);//simulating the consideration of sending a message
@@ -153,8 +149,7 @@ void* nodeProcess(void* nodeInfo){
 				pthread_mutex_lock(&channel_1lock);
 					usleep(data->dwell_noisemakers);//simulating noise, take over the channel by using a lock
 				pthread_mutex_unlock(&channel_1lock);
-			}
-			else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
+			}else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
 				messageData newMessage;
 				strcpy(newMessage.transMess, mess[random() % 25]);	
 				newMessage.nodeID = data->nodeID;
@@ -173,13 +168,19 @@ void* nodeProcess(void* nodeInfo){
 			}else{//if not sending a message re-transmit seen messages
 				pthread_mutex_lock(&channel_1lock);
 					usleep(data->transmission_time);//simulating transmission time
-					memcpy(&channel_1[channel_1count], &messageBuffer[messageBuffCount], sizeof(messageData));
+					if(messageBuffer[reBroadInd].nodeID != 0 && messageBuffer[reBroadInd].nodeID != data->nodeID){
+						messageBuffer[reBroadInd].nodeID = data->nodeID;
+						memcpy(&channel_1[channel_1count], &messageBuffer[reBroadInd], sizeof(messageData));
+						if(++reBroadInd == MESSAGE_BUFF_SIZE - 1){
+							reBroadInd = 0;
+						}
+					}	
 					if(++channel_1count == CHANNEL_SIZE){
 						channel_1count = 0;
 					}
 				pthread_mutex_unlock(&channel_1lock);
 				if(--messageBuffCount == -1){
-					messageBuffCount = 99;
+					messageBuffCount = MESSAGE_BUFF_SIZE - 1;
 				}
 			}  
 		}else if(channel == 1){//channel 6
@@ -188,8 +189,7 @@ void* nodeProcess(void* nodeInfo){
 				pthread_mutex_lock(&channel_6lock);
 					usleep(data->dwell_noisemakers);//simulating noise
 				pthread_mutex_unlock(&channel_6lock);
-			}
-			else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
+			}else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
 				messageData newMessage;
 				strcpy(newMessage.transMess, mess[random() % 25]);
 				newMessage.nodeID = data->nodeID;
@@ -204,17 +204,23 @@ void* nodeProcess(void* nodeInfo){
 					if(++channel_6count == CHANNEL_SIZE){
 						channel_6count = 0;
 					}
-				pthread_mutex_unlock(&channel_6lock);    
+				pthread_mutex_unlock(&channel_6lock);   
 			}else{//if not sending a message re-transmit seen messages
 				pthread_mutex_lock(&channel_6lock);
 					usleep(data->transmission_time);//simulating transmission time
-					memcpy(&channel_6[channel_6count], &messageBuffer[messageBuffCount], sizeof(messageData));
+					if(messageBuffer[reBroadInd].nodeID != 0 && messageBuffer[reBroadInd].nodeID != data->nodeID){
+						messageBuffer[reBroadInd].nodeID = data->nodeID;
+						memcpy(&channel_6[channel_1count], &messageBuffer[reBroadInd], sizeof(messageData));
+						if(++reBroadInd == MESSAGE_BUFF_SIZE - 1){
+							reBroadInd = 0;
+						}
+					}
 					if(++channel_6count == CHANNEL_SIZE){
 						channel_6count = 0;
 					}
 				pthread_mutex_unlock(&channel_6lock);
 				if(--messageBuffCount == -1){
-					messageBuffCount = 99;
+					messageBuffCount = MESSAGE_BUFF_SIZE - 1;
 				}
 			}
 		}else if(channel == 2){//channel 11
@@ -223,8 +229,7 @@ void* nodeProcess(void* nodeInfo){
 				pthread_mutex_lock(&channel_11lock);
 					usleep(data->dwell_noisemakers);//simulating noise
 				pthread_mutex_unlock(&channel_11lock);
-			}
-			else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
+			}else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
 				messageData newMessage;
 				strcpy(newMessage.transMess, mess[random() % 25]);
 				newMessage.nodeID = data->nodeID;
@@ -243,23 +248,30 @@ void* nodeProcess(void* nodeInfo){
 			}else{//if not sending a message re-transmit seen messages
 				pthread_mutex_lock(&channel_11lock);
 					usleep(data->transmission_time);//simulating transmission time
-					memcpy(&channel_11[channel_11count], &messageBuffer[messageBuffCount], sizeof(messageData));
+					if(messageBuffer[reBroadInd].nodeID != 0 && messageBuffer[reBroadInd].nodeID != data->nodeID){
+						messageBuffer[reBroadInd].nodeID = data->nodeID;
+						memcpy(&channel_11[channel_1count], &messageBuffer[reBroadInd], sizeof(messageData));
+						if(++reBroadInd == MESSAGE_BUFF_SIZE - 1){
+							reBroadInd = 0;
+						}
+					}
 					if(++channel_11count == CHANNEL_SIZE){
 						channel_11count = 0;
 					}
 				pthread_mutex_unlock(&channel_11lock);
 				if(--messageBuffCount == -1){
-					messageBuffCount = 99;
+					messageBuffCount = MESSAGE_BUFF_SIZE - 1;
 				}
 			}
 		}
 		
 		memset(uniqueMess, 0, sizeof(uniqueMess));//reset unique concatenated message
 		
-		/****************************************reading from each channel****************************************/ 
+		/****************************************Reading from Channels****************************************/ 
+		//algorithm is the same for each channel
 		localChannelCount1 = channel_1count;//channel 1
 		for(i = 0; i < numNodesInRange; i++){//for number of nodes in range
-			if(nodesInRange[i].nodeID != 0){//ignore IDs that are 0             
+			if(nodesInRange[i].nodeID != 0){ //ignore IDs that are 0           
 				for(j = 0; j < localChannelCount1; j++){
 					pthread_mutex_lock(&channel_1lock);
 					if((nodesInRange[i].nodeID == channel_1[j].nodeID) && (channel_1[j].transMess != NULL)){//if ID of message in channel matches node in range, and the channel has a message						
@@ -281,7 +293,7 @@ void* nodeProcess(void* nodeInfo){
 								messageBuffCount = 0;
 							}
 						}		
-						sawMess_ch1 = 0;	
+						sawMess_ch1 = 0;//reset saw-message flag	
 					} 
 					pthread_mutex_unlock(&channel_1lock);
 				} 
@@ -293,7 +305,7 @@ void* nodeProcess(void* nodeInfo){
 				for(j = 0; j < localChannelCount6; j++){
 					pthread_mutex_lock(&channel_6lock);
 					if((nodesInRange[i].nodeID == channel_6[j].nodeID) && (channel_6[j].transMess != NULL)){//if ID of message in channel matches node in range, and the channel has a message
-						for(k = 0; k < messageBuffCount; k++){
+						for(k = 0; k < messageBuffCount; k++){//check if the message has been seen
 							if(!strcmp(channel_6[j].transMess, messageBuffer[k].transMess)){//true if already have seen message
 								sawMess_ch6 = 1;//set flag if message has been seen
 							}
@@ -311,7 +323,7 @@ void* nodeProcess(void* nodeInfo){
 								messageBuffCount = 0;
 							}
 						}		
-						sawMess_ch6 = 0;
+						sawMess_ch6 = 0;//reset saw-message flag
 					} 
 					pthread_mutex_unlock(&channel_6lock);
 				}
@@ -319,10 +331,10 @@ void* nodeProcess(void* nodeInfo){
 		}
 		localChannelCount11 = channel_11count;//channel 11
 		for(i = 0; i < numNodesInRange; i++){//for number of nodes in range
-			if(nodesInRange[i].nodeID != 0){ //ignore IDs that are 0
+			if(nodesInRange[i].nodeID != 0){ //ignore IDs that are 0 
 				for(j = 0; j < localChannelCount11; j++){
 					pthread_mutex_lock(&channel_11lock);
-					if((nodesInRange[i].nodeID == channel_11[j].nodeID) && (channel_11[j].transMess != NULL)){
+					if((nodesInRange[i].nodeID == channel_11[j].nodeID) && (channel_11[j].transMess != NULL)){//if ID of message in channel matches node in range, and the channel has a message
 						for(k = 0; k < messageBuffCount; k++){//check if the message has been seen
 							if(!strcmp(channel_11[j].transMess, messageBuffer[k].transMess)){//true if already have seen message
 								sawMess_ch11 = 1;//set flag if message has been seen
@@ -341,7 +353,7 @@ void* nodeProcess(void* nodeInfo){
 								messageBuffCount = 0;
 							}
 						}		
-						sawMess_ch11 = 0;					
+						sawMess_ch11 = 0;//reset saw-message flag 					
 					} 
 					pthread_mutex_unlock(&channel_11lock);
 				}
@@ -375,8 +387,14 @@ void* nodeProcess(void* nodeInfo){
 
 int main(int argc, char** argv){
 	srand(time(NULL));
-	int i, checkError;
-
+	int i, j, k, checkError;
+	int ind = 0;
+	int putX = 0;
+	int nodeNum[NUM_NODES];//for printing grid
+	int nodeid[NUM_NODES];//for printing grid
+	int nodeX_coor[NUM_NODES];
+	int nodeY_coor[NUM_NODES];
+	
 	pthread_t nodes[NUM_NODES];
 	nodeData nodeInfo[NUM_NODES];//data struct for each thread
 
@@ -389,22 +407,21 @@ int main(int argc, char** argv){
 		for(i = 0; i < NUM_NODES; i++){
 			nodeInfo[i].nodeID = (random() % UINT_MAX) + 1;//set node Id, 4 bytes
 			nodeCache[i].nodeID = nodeInfo[i].nodeID;//line stay for testing and non testing
-
 			/*non-testing coordinate generation*/
-			nodeInfo[i].x_coor = random() % 100;
-			nodeInfo[i].y_coor = random() % 100;
+			nodeInfo[i].x_coor = (random() % 100) + 1;
+			nodeInfo[i].y_coor = (random() % 100) + 1;
 			nodeCache[i].x_coor = nodeInfo[i].x_coor;
 			nodeCache[i].y_coor = nodeInfo[i].y_coor;
 
-			nodeInfo[i].dwell_duration = 1000000;
+			nodeInfo[i].dwell_duration = 1000;
 			nodeInfo[i].dwell_probability = 1;
 			nodeInfo[i].transmission_time = 100;
 			nodeInfo[i].talk_window_time = 100;
-			nodeInfo[i].talk_probability = 50;
+			nodeInfo[i].talk_probability = 10;
 			if(i < NUM_NOISE_MAKERS){//make desired amount of nodes noisemakers
 				nodeInfo[i].is_noisemaker = 1;
 				nodeInfo[i].dwell_noisemakers = (random() % 2000) + 1000;
-				nodeInfo[i].dwell_probability_noisemakers = 20;
+				nodeInfo[i].dwell_probability_noisemakers = 50;
 			}else{
 				nodeInfo[i].is_noisemaker = 0;
 				nodeInfo[i].dwell_noisemakers = 0;
@@ -417,6 +434,44 @@ int main(int argc, char** argv){
 			}
 		}
 
+		/*Print grid to stdout*/
+		for(i = 1; i <= 100; i++){//iterate through y coor
+			if(i < 10){
+				printf("%d  ", i);
+			}else{
+				printf("%d ", i);
+			}
+			for(j = 1; j <= 100; j++){//iterate through x coor
+				for(k = 0; k < NUM_NODES; k++){
+					if((nodeCache[k].x_coor == j) && (nodeCache[k].y_coor == i)){//loop through nodes to see if they hvae matching x and y coor to j and i
+						nodeNum[ind] = ind + 1;//save to print node info after grid generation
+						nodeid[ind] = nodeCache[k].nodeID;
+						nodeX_coor[ind] = nodeCache[k].x_coor;
+						nodeY_coor[ind] = nodeCache[k].y_coor;
+						ind++;
+						printf("%d", ind);
+						putX = 1;
+					}	
+				}
+				if(putX != 1){
+					putchar('-');
+				}
+				putX = 0;
+			}
+			
+			putchar('\n');					
+			if((j == 100 && i == 100) || (ind >= NUM_NODES)){//stop printing when all node have been printed
+				break;
+			}
+		}
+
+		/*print node info*/
+		puts("node #: node ID, x, y");
+		for(i = 0; i < NUM_NODES; i++){
+			printf("%d: %d, x = %d, y = %d\n", nodeNum[i], nodeid[i], nodeX_coor[i], nodeY_coor[i]);
+		}
+		puts("Running Simulation...");
+		
 		for (i = 0; i < NUM_NODES; ++i) {
 			pthread_join(nodes[i], NULL);
 		}
@@ -425,6 +480,7 @@ int main(int argc, char** argv){
 		pthread_mutex_destroy(&channel_6lock);
 		pthread_mutex_destroy(&channel_11lock);
 		puts("Simulation Complete...");
+		//end if(argc == 1)
 	}else{
 		puts("Correct usage: ./macmutex <no arguments>");
 	}

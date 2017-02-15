@@ -12,7 +12,7 @@
 #include <semaphore.h>
 
 #define NUM_NODES 350
-#define NUM_NOISE_MAKERS 0
+#define NUM_NOISE_MAKERS 50
 #define EXP_DURATION 20 
 #define CHANNEL_SIZE 4000 //number of messages each channel can hold
 #define MESSAGE_BUFF_SIZE 300
@@ -28,7 +28,6 @@ char* mess[25] = {"hello!", "goodbye!", "cs3013!", "orange!", "purple!",\
 sem_t channel_1lock;
 sem_t channel_6lock;
 sem_t channel_11lock;
-sem_t numNodesLock;
 
 /*message struct*/
 typedef struct message{
@@ -107,26 +106,22 @@ void* nodeProcess(void* nodeInfo){
 				nodesInRange[numNodesInRange].x_coor = nodeCache[i].x_coor;
 				nodesInRange[numNodesInRange].y_coor = nodeCache[i].y_coor;
 				numNodesInRange++;
-			}
-			else if((nodeCache[i].x_coor < 5 && data->x_coor < 5) && (nodeCache[i].y_coor > 95 && data->y_coor > 95) && (data->y_coor < (nodeCache[i].y_coor + 5))){
+			}else if((nodeCache[i].x_coor < 5 && data->x_coor < 5) && (nodeCache[i].y_coor > 95 && data->y_coor > 95) && (data->y_coor < (nodeCache[i].y_coor + 5))){
 				nodesInRange[numNodesInRange].nodeID = nodeCache[i].nodeID;//in range
 				nodesInRange[numNodesInRange].x_coor = nodeCache[i].x_coor;
 				nodesInRange[numNodesInRange].y_coor = nodeCache[i].y_coor;
 				numNodesInRange++;
-			}
-			else if((nodeCache[i].x_coor > 95 && data->x_coor > 95) && (nodeCache[i].y_coor < 5 && data->y_coor < 5) && (data->y_coor > (nodeCache[i].y_coor - 5))){
+			}else if((nodeCache[i].x_coor > 95 && data->x_coor > 95) && (nodeCache[i].y_coor < 5 && data->y_coor < 5) && (data->y_coor > (nodeCache[i].y_coor - 5))){
 				nodesInRange[numNodesInRange].nodeID = nodeCache[i].nodeID;//in range
 				nodesInRange[numNodesInRange].x_coor = nodeCache[i].x_coor;
 				nodesInRange[numNodesInRange].y_coor = nodeCache[i].y_coor;
 				numNodesInRange++;
-			}
-			else if((nodeCache[i].x_coor > 95 && data->x_coor > 95) && (nodeCache[i].y_coor > 95 && data->y_coor > 95) && (data->y_coor > (nodeCache[i].y_coor - 5))){
+			}else if((nodeCache[i].x_coor > 95 && data->x_coor > 95) && (nodeCache[i].y_coor > 95 && data->y_coor > 95) && (data->y_coor > (nodeCache[i].y_coor - 5))){
 				nodesInRange[numNodesInRange].nodeID = nodeCache[i].nodeID;//in range
 				nodesInRange[numNodesInRange].x_coor = nodeCache[i].x_coor;
 				nodesInRange[numNodesInRange].y_coor = nodeCache[i].y_coor;
 				numNodesInRange++;
-			}
-			else if((nodeCache[i].x_coor < 5 && data->x_coor < 5) && (nodeCache[i].y_coor < 5 && data->y_coor < 5) && (data->y_coor < (nodeCache[i].y_coor + 5))){
+			}else if((nodeCache[i].x_coor < 5 && data->x_coor < 5) && (nodeCache[i].y_coor < 5 && data->y_coor < 5) && (data->y_coor < (nodeCache[i].y_coor + 5))){
 				nodesInRange[numNodesInRange].nodeID = nodeCache[i].nodeID;//in range
 				nodesInRange[numNodesInRange].x_coor = nodeCache[i].x_coor;
 				nodesInRange[numNodesInRange].y_coor = nodeCache[i].y_coor;
@@ -154,8 +149,7 @@ void* nodeProcess(void* nodeInfo){
 				sem_wait(&channel_1lock);
 					usleep(data->dwell_noisemakers);//simulating noise, take over the channel by using a lock
 				sem_post(&channel_1lock);
-			}
-			else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
+			}else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
 				messageData newMessage;
 				strcpy(newMessage.transMess, mess[random() % 25]);	
 				newMessage.nodeID = data->nodeID;
@@ -195,8 +189,7 @@ void* nodeProcess(void* nodeInfo){
 				sem_wait(&channel_6lock);
 					usleep(data->dwell_noisemakers);//simulating noise
 				sem_post(&channel_6lock);
-			}
-			else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
+			}else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
 				messageData newMessage;
 				strcpy(newMessage.transMess, mess[random() % 25]);
 				newMessage.nodeID = data->nodeID;
@@ -236,8 +229,7 @@ void* nodeProcess(void* nodeInfo){
 				sem_wait(&channel_11lock);
 					usleep(data->dwell_noisemakers);//simulating noise
 				sem_post(&channel_11lock);
-			}
-			else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
+			}else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
 				messageData newMessage;
 				strcpy(newMessage.transMess, mess[random() % 25]);
 				newMessage.nodeID = data->nodeID;
@@ -443,16 +435,16 @@ int main(int argc, char** argv){
 		}
 
 		/*Print grid to stdout*/
-		for(i = 1; i <= 100; i++){
+		for(i = 1; i <= 100; i++){//iterate through y coor
 			if(i < 10){
 				printf("%d  ", i);
 			}else{
 				printf("%d ", i);
 			}
-			for(j = 1; j <= 100; j++){
+			for(j = 1; j <= 100; j++){//iterate through x coor
 				for(k = 0; k < NUM_NODES; k++){
-					if((nodeCache[k].x_coor == j) && (nodeCache[k].y_coor == i)){	
-						nodeNum[ind] = ind + 1;
+					if((nodeCache[k].x_coor == j) && (nodeCache[k].y_coor == i)){//loop through nodes to see if they hvae matching x and y coor to j and i
+						nodeNum[ind] = ind + 1;//save to print node info after grid generation
 						nodeid[ind] = nodeCache[k].nodeID;
 						nodeX_coor[ind] = nodeCache[k].x_coor;
 						nodeY_coor[ind] = nodeCache[k].y_coor;
@@ -468,7 +460,7 @@ int main(int argc, char** argv){
 			}
 			
 			putchar('\n');					
-			if((j == 100 && i == 100) || (ind >= NUM_NODES)){//
+			if((j == 100 && i == 100) || (ind >= NUM_NODES)){//stop printing when all node have been printed
 				break;
 			}
 		}
@@ -488,6 +480,7 @@ int main(int argc, char** argv){
 		sem_destroy(&channel_6lock);
 		sem_destroy(&channel_11lock);
 		puts("Simulation Complete...");
+		//end if(argc == 1)
 	}else{
 		puts("Correct usage: ./macsem <no arguments>");
 	}
