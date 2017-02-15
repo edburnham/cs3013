@@ -11,9 +11,9 @@
 #include <sys/types.h>
 #include <semaphore.h>
 
-#define NUM_NODES 10
+#define NUM_NODES 350
 #define NUM_NOISE_MAKERS 0
-#define EXP_DURATION 20 //Experiment duration ~ dwell duration * EXP_DURATION
+#define EXP_DURATION 20 
 #define CHANNEL_SIZE 4000 //number of messages each channel can hold
 #define MESSAGE_BUFF_SIZE 300
 
@@ -28,6 +28,7 @@ char* mess[25] = {"hello!", "goodbye!", "cs3013!", "orange!", "purple!",\
 sem_t channel_1lock;
 sem_t channel_6lock;
 sem_t channel_11lock;
+sem_t numNodesLock;
 
 /*message struct*/
 typedef struct message{
@@ -74,6 +75,7 @@ void* nodeProcess(void* nodeInfo){
 	int channel = random() % 3;
 	int totalTime = 0;
 	int numNodesInRange = 0;
+	int reBroadInd = 0;
 	int i, j, k;
 	int localChannelCount1 = 0;
 	int localChannelCount6 = 0;
@@ -172,7 +174,13 @@ void* nodeProcess(void* nodeInfo){
 			}else{//if not sending a message re-transmit seen messages
 				sem_wait(&channel_1lock);
 					usleep(data->transmission_time);//simulating transmission time
-					memcpy(&channel_1[channel_1count], &messageBuffer[messageBuffCount], sizeof(messageData));
+					if(messageBuffer[reBroadInd].nodeID != 0 && messageBuffer[reBroadInd].nodeID != data->nodeID){
+						messageBuffer[reBroadInd].nodeID = data->nodeID;
+						memcpy(&channel_1[channel_1count], &messageBuffer[reBroadInd], sizeof(messageData));
+						if(++reBroadInd == MESSAGE_BUFF_SIZE - 1){
+							reBroadInd = 0;
+						}
+					}	
 					if(++channel_1count == CHANNEL_SIZE){
 						channel_1count = 0;
 					}
@@ -207,7 +215,13 @@ void* nodeProcess(void* nodeInfo){
 			}else{//if not sending a message re-transmit seen messages
 				sem_wait(&channel_6lock);
 					usleep(data->transmission_time);//simulating transmission time
-					memcpy(&channel_6[channel_6count], &messageBuffer[messageBuffCount], sizeof(messageData));
+					if(messageBuffer[reBroadInd].nodeID != 0 && messageBuffer[reBroadInd].nodeID != data->nodeID){
+						messageBuffer[reBroadInd].nodeID = data->nodeID;
+						memcpy(&channel_6[channel_1count], &messageBuffer[reBroadInd], sizeof(messageData));
+						if(++reBroadInd == MESSAGE_BUFF_SIZE - 1){
+							reBroadInd = 0;
+						}
+					}
 					if(++channel_6count == CHANNEL_SIZE){
 						channel_6count = 0;
 					}
@@ -242,7 +256,13 @@ void* nodeProcess(void* nodeInfo){
 			}else{//if not sending a message re-transmit seen messages
 				sem_wait(&channel_11lock);
 					usleep(data->transmission_time);//simulating transmission time
-					memcpy(&channel_11[channel_11count], &messageBuffer[messageBuffCount], sizeof(messageData));
+					if(messageBuffer[reBroadInd].nodeID != 0 && messageBuffer[reBroadInd].nodeID != data->nodeID){
+						messageBuffer[reBroadInd].nodeID = data->nodeID;
+						memcpy(&channel_11[channel_1count], &messageBuffer[reBroadInd], sizeof(messageData));
+						if(++reBroadInd == MESSAGE_BUFF_SIZE - 1){
+							reBroadInd = 0;
+						}
+					}
 					if(++channel_11count == CHANNEL_SIZE){
 						channel_11count = 0;
 					}
@@ -396,16 +416,16 @@ int main(int argc, char** argv){
 			nodeInfo[i].nodeID = (random() % UINT_MAX) + 1;//set node Id, 4 bytes
 			nodeCache[i].nodeID = nodeInfo[i].nodeID;//line stay for testing and non testing
 			/*non-testing coordinate generation*/
-			nodeInfo[i].x_coor = random() % 100;
-			nodeInfo[i].y_coor = random() % 100;
+			nodeInfo[i].x_coor = (random() % 100) + 1;
+			nodeInfo[i].y_coor = (random() % 100) + 1;
 			nodeCache[i].x_coor = nodeInfo[i].x_coor;
 			nodeCache[i].y_coor = nodeInfo[i].y_coor;
 
-			nodeInfo[i].dwell_duration = 1000000;
+			nodeInfo[i].dwell_duration = 1000;
 			nodeInfo[i].dwell_probability = 1;
 			nodeInfo[i].transmission_time = 100;
 			nodeInfo[i].talk_window_time = 100;
-			nodeInfo[i].talk_probability = 50;
+			nodeInfo[i].talk_probability = 10;
 			if(i < NUM_NOISE_MAKERS){//make desired amount of nodes noisemakers
 				nodeInfo[i].is_noisemaker = 1;
 				nodeInfo[i].dwell_noisemakers = (random() % 2000) + 1000;
@@ -425,9 +445,9 @@ int main(int argc, char** argv){
 		/*Print grid to stdout*/
 		for(i = 1; i <= 100; i++){
 			if(i < 10){
-				printf("%d ", i);
+				printf("%d  ", i);
 			}else{
-				printf("%d", i);
+				printf("%d ", i);
 			}
 			for(j = 1; j <= 100; j++){
 				for(k = 0; k < NUM_NODES; k++){
@@ -439,20 +459,21 @@ int main(int argc, char** argv){
 						ind++;
 						printf("%d", ind);
 						putX = 1;
-					}					
+					}	
 				}
 				if(putX != 1){
 					putchar('-');
 				}
 				putX = 0;
 			}
+			
 			putchar('\n');					
-			if((j == 100 && i == 100) || (ind >= NUM_NODES)){
+			if((j == 100 && i == 100) || (ind >= NUM_NODES)){//
 				break;
 			}
 		}
-		
-		/*print node IDs*/
+
+		/*print node info*/
 		puts("node #: node ID, x, y");
 		for(i = 0; i < NUM_NODES; i++){
 			printf("%d: %d, x = %d, y = %d\n", nodeNum[i], nodeid[i], nodeX_coor[i], nodeY_coor[i]);
