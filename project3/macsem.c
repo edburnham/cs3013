@@ -11,11 +11,20 @@
 #include <sys/types.h>
 #include <semaphore.h>
 
-#define NUM_NODES 350
-#define NUM_NOISE_MAKERS 50
+#define NUM_NODES 350 //Actual number of regular nodes = NUM_NODES - NUM_NOISE_MAKERS
+#define NUM_NOISE_MAKERS 20
 #define EXP_DURATION 20 
 #define CHANNEL_SIZE 4000 //number of messages each channel can hold
 #define MESSAGE_BUFF_SIZE 300
+
+/*Node Attributes*/
+#define DWELL_PROBABILITY 1
+#define TRANSMISSION_TIME 100
+#define TALK_WINDOW_TIME 100
+#define TALK_PROABILITY 10
+#define DWELL_NOISEMAKER_DURATION (random() % 2000) + 1000
+#define DWELL_NOISEMAKER_PROBABILITY 50
+#define DWELL_DURATION 1000
 
 /*random messages to send*/
 char* mess[25] = {"hello!", "goodbye!", "cs3013!", "orange!", "purple!",\
@@ -83,6 +92,11 @@ void* nodeProcess(void* nodeInfo){
 	int sawMess_ch6 = 0;
 	int sawMess_ch11 = 0;
 	
+	FILE *noise;
+	char noiseStart[28];
+	char noiseStop[28];
+	char noisefile[50];
+	
 	char uniqueMess[50];//ID concatenated with message
 	char filename[50];
 	
@@ -148,7 +162,19 @@ void* nodeProcess(void* nodeInfo){
 			if(data->is_noisemaker == 1){
 				sem_wait(&channel_1lock);
 					usleep(data->dwell_noisemakers);//simulating noise, take over the channel by using a lock
+					currentTime = time(NULL);
+					strcpy(noiseStart, ctime(&currentTime));
+					usleep(data->dwell_noisemakers);//simulating noise, take over the channel by using a lock
+					sprintf(noisefile, "noisemaker%d", data->nodeID);
+					strncat(noisefile, ".txt", sizeof(".txt"));
+					noise = fopen(noisefile, "a+");
 				sem_post(&channel_1lock);
+				currentTime = time(NULL);
+				strcpy(noiseStop, ctime(&currentTime));
+				fprintf(noise, "Log for NOISEMAKER %d: with coordinates: x = %d, y = %d on channel %d\n", data->nodeID, data->x_coor, data->y_coor, 1);
+				fprintf(noise, "Started making noise at %s:\n", noiseStart);
+				fprintf(noise, "Stopped making noise at %s:\n\n", noiseStop);
+				fclose(noise);
 			}else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
 				messageData newMessage;
 				strcpy(newMessage.transMess, mess[random() % 25]);	
@@ -187,8 +213,20 @@ void* nodeProcess(void* nodeInfo){
 			usleep(data->talk_window_time);//simulating the consideration of sending a message
 			if(data->is_noisemaker == 1){
 				sem_wait(&channel_6lock);
-					usleep(data->dwell_noisemakers);//simulating noise
+					usleep(data->dwell_noisemakers);//simulating noise, take over the channel by using a lock
+					currentTime = time(NULL);
+					strcpy(noiseStart, ctime(&currentTime));
+					usleep(data->dwell_noisemakers);//simulating noise, take over the channel by using a lock
+					sprintf(noisefile, "noisemaker%d", data->nodeID);
+					strncat(noisefile, ".txt", sizeof(".txt"));
+					noise = fopen(noisefile, "a+");
 				sem_post(&channel_6lock);
+				currentTime = time(NULL);
+				strcpy(noiseStop, ctime(&currentTime));
+				fprintf(noise, "Log for NOISEMAKER %d: with coordinates: x = %d, y = %d on channel %d\n", data->nodeID, data->x_coor, data->y_coor, 1);
+				fprintf(noise, "Started making noise at %s:\n", noiseStart);
+				fprintf(noise, "Stopped making noise at %s:\n\n", noiseStop);
+				fclose(noise);
 			}else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
 				messageData newMessage;
 				strcpy(newMessage.transMess, mess[random() % 25]);
@@ -227,8 +265,20 @@ void* nodeProcess(void* nodeInfo){
 			usleep(data->talk_window_time);//simulating the consideration of sending a message
 			if(data->is_noisemaker == 1){
 				sem_wait(&channel_11lock);
-					usleep(data->dwell_noisemakers);//simulating noise
+					usleep(data->dwell_noisemakers);//simulating noise, take over the channel by using a lock
+					currentTime = time(NULL);
+					strcpy(noiseStart, ctime(&currentTime));
+					usleep(data->dwell_noisemakers);//simulating noise, take over the channel by using a lock
+					sprintf(noisefile, "noisemaker%d", data->nodeID);
+					strncat(noisefile, ".txt", sizeof(".txt"));
+					noise = fopen(noisefile, "a+");
 				sem_post(&channel_11lock);
+				currentTime = time(NULL);
+				strcpy(noiseStop, ctime(&currentTime));
+				fprintf(noise, "Log for NOISEMAKER %d: with coordinates: x = %d, y = %d on channel %d\n", data->nodeID, data->x_coor, data->y_coor, 1);
+				fprintf(noise, "Started making noise at %s:\n", noiseStart);
+				fprintf(noise, "Stopped making noise at %s:\n\n", noiseStop);
+				fclose(noise);
 			}else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
 				messageData newMessage;
 				strcpy(newMessage.transMess, mess[random() % 25]);
@@ -395,7 +445,9 @@ int main(int argc, char** argv){
 	int nodeX_coor[NUM_NODES];
 	int nodeY_coor[NUM_NODES];
 	
+	pthread_attr_t attr;	
 	pthread_t nodes[NUM_NODES];
+	pthread_attr_init(&attr);
 	nodeData nodeInfo[NUM_NODES];//data struct for each thread
 
 	sem_init(&channel_1lock, 0, 1);
@@ -404,24 +456,26 @@ int main(int argc, char** argv){
 
 	if(argc == 1){
 		puts("Running Simulation...");
+		if(pthread_attr_setschedpolicy(&attr, SCHED_RR) != 0){//set scheduling policy to Round Robin
+			fprintf(stderr, "Failed to set scheduing policy\n");
+		}
 		for(i = 0; i < NUM_NODES; i++){
 			nodeInfo[i].nodeID = (random() % UINT_MAX) + 1;//set node Id, 4 bytes
 			nodeCache[i].nodeID = nodeInfo[i].nodeID;//line stay for testing and non testing
-			/*non-testing coordinate generation*/
 			nodeInfo[i].x_coor = (random() % 100) + 1;
 			nodeInfo[i].y_coor = (random() % 100) + 1;
 			nodeCache[i].x_coor = nodeInfo[i].x_coor;
 			nodeCache[i].y_coor = nodeInfo[i].y_coor;
-
-			nodeInfo[i].dwell_duration = 1000;
-			nodeInfo[i].dwell_probability = 1;
-			nodeInfo[i].transmission_time = 100;
-			nodeInfo[i].talk_window_time = 100;
-			nodeInfo[i].talk_probability = 10;
+			
+			nodeInfo[i].dwell_duration = DWELL_DURATION;
+			nodeInfo[i].dwell_probability = DWELL_PROBABILITY;
+			nodeInfo[i].transmission_time = TRANSMISSION_TIME;
+			nodeInfo[i].talk_window_time = TALK_WINDOW_TIME;
+			nodeInfo[i].talk_probability = TALK_PROABILITY;
 			if(i < NUM_NOISE_MAKERS){//make desired amount of nodes noisemakers
 				nodeInfo[i].is_noisemaker = 1;
-				nodeInfo[i].dwell_noisemakers = (random() % 2000) + 1000;
-				nodeInfo[i].dwell_probability_noisemakers = 50;
+				nodeInfo[i].dwell_noisemakers = DWELL_NOISEMAKER_DURATION;
+				nodeInfo[i].dwell_probability_noisemakers = DWELL_NOISEMAKER_PROBABILITY;
 			}else{
 				nodeInfo[i].is_noisemaker = 0;
 				nodeInfo[i].dwell_noisemakers = 0;
@@ -471,7 +525,7 @@ int main(int argc, char** argv){
 			printf("%d: %d, x = %d, y = %d\n", nodeNum[i], nodeid[i], nodeX_coor[i], nodeY_coor[i]);
 		}
 		puts("Running Simulation...");
-		
+		printf("%d nodes and %d noisemakers\n", NUM_NODES - NUM_NOISE_MAKERS, NUM_NOISE_MAKERS);
 		for (i = 0; i < NUM_NODES; ++i) {
 			pthread_join(nodes[i], NULL);
 		}

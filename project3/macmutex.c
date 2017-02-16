@@ -11,11 +11,20 @@
 #include <sys/types.h>
 #include <semaphore.h>
 
-#define NUM_NODES 350
-#define NUM_NOISE_MAKERS 50
+#define NUM_NODES 350 //Actual number of regular nodes = NUM_NODES - NUM_NOISE_MAKERS
+#define NUM_NOISE_MAKERS 20
 #define EXP_DURATION 20 
 #define CHANNEL_SIZE 4000 //number of messages each channel can hold
 #define MESSAGE_BUFF_SIZE 300
+
+/*Node Attributes*/
+#define DWELL_PROBABILITY 1
+#define TRANSMISSION_TIME 100
+#define TALK_WINDOW_TIME 100
+#define TALK_PROABILITY 10
+#define DWELL_NOISEMAKER_DURATION (random() % 2000) + 1000
+#define DWELL_NOISEMAKER_PROBABILITY 50
+#define DWELL_DURATION 1000
 
 /*random messages to send*/
 char* mess[25] = {"hello!", "goodbye!", "cs3013!", "orange!", "purple!",\
@@ -28,6 +37,11 @@ char* mess[25] = {"hello!", "goodbye!", "cs3013!", "orange!", "purple!",\
 pthread_mutex_t channel_1lock;
 pthread_mutex_t channel_6lock;
 pthread_mutex_t channel_11lock;
+pthread_mutex_t start;
+
+pthread_mutexattr_t type;
+pthread_condattr_t cattr;
+pthread_cond_t CV;
 
 /*message struct*/
 typedef struct message{
@@ -46,6 +60,8 @@ messageData channel_11[CHANNEL_SIZE];
 int channel_1count = 0;
 int channel_6count = 0;
 int channel_11count = 0;
+
+int flagStop = 0;
 
 messageData nodeCache[NUM_NODES];//storing all the nodes
 
@@ -66,6 +82,12 @@ typedef struct nodeData{
 
 /*thread process*/
 void* nodeProcess(void* nodeInfo){
+	pthread_mutex_lock(&start);	//demontrating condition variables
+	while(flagStop != 1){//all threads wait on the condition variable and block on the start mutex
+		pthread_cond_broadcast(&CV);
+	}
+	pthread_mutex_unlock(&start);	
+	
 	nodeData* data = (nodeData*)nodeInfo;
 	time_t currentTime;
 	
@@ -82,6 +104,11 @@ void* nodeProcess(void* nodeInfo){
 	int sawMess_ch1 = 0;
 	int sawMess_ch6 = 0;
 	int sawMess_ch11 = 0;
+	
+	FILE *noise;
+	char noiseStart[28];
+	char noiseStop[28];
+	char noisefile[50];
 	
 	char uniqueMess[50];//ID concatenated with message
 	char filename[50];
@@ -147,8 +174,19 @@ void* nodeProcess(void* nodeInfo){
 			usleep(data->talk_window_time);//simulating the consideration of sending a message
 			if(data->is_noisemaker == 1){
 				pthread_mutex_lock(&channel_1lock);
+					currentTime = time(NULL);
+					strcpy(noiseStart, ctime(&currentTime));
 					usleep(data->dwell_noisemakers);//simulating noise, take over the channel by using a lock
+					sprintf(noisefile, "noisemaker%d", data->nodeID);
+					strncat(noisefile, ".txt", sizeof(".txt"));
+					noise = fopen(noisefile, "a+");
 				pthread_mutex_unlock(&channel_1lock);
+				currentTime = time(NULL);
+				strcpy(noiseStop, ctime(&currentTime));
+				fprintf(noise, "Log for NOISEMAKER %d: with coordinates: x = %d, y = %d on channel %d\n", data->nodeID, data->x_coor, data->y_coor, 1);
+				fprintf(noise, "Started making noise at %s:\n", noiseStart);
+				fprintf(noise, "Stopped making noise at %s:\n\n", noiseStop);
+				fclose(noise);				
 			}else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
 				messageData newMessage;
 				strcpy(newMessage.transMess, mess[random() % 25]);	
@@ -187,8 +225,19 @@ void* nodeProcess(void* nodeInfo){
 			usleep(data->talk_window_time);//simulating the consideration of sending a message
 			if(data->is_noisemaker == 1){
 				pthread_mutex_lock(&channel_6lock);
-					usleep(data->dwell_noisemakers);//simulating noise
+					currentTime = time(NULL);
+					strcpy(noiseStart, ctime(&currentTime));
+					usleep(data->dwell_noisemakers);//simulating noise, take over the channel by using a lock
+					sprintf(noisefile, "noisemaker%d", data->nodeID);
+					strncat(noisefile, ".txt", sizeof(".txt"));
+					noise = fopen(noisefile, "a+");
 				pthread_mutex_unlock(&channel_6lock);
+				currentTime = time(NULL);
+				strcpy(noiseStop, ctime(&currentTime));
+				fprintf(noise, "Log for NOISEMAKER %d: with coordinates: x = %d, y = %d on channel %d\n", data->nodeID, data->x_coor, data->y_coor, 6);
+				fprintf(noise, "Started making noise at %s:\n", noiseStart);
+				fprintf(noise, "Stopped making noise at %s:\n\n", noiseStop);
+				fclose(noise);		
 			}else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
 				messageData newMessage;
 				strcpy(newMessage.transMess, mess[random() % 25]);
@@ -227,8 +276,19 @@ void* nodeProcess(void* nodeInfo){
 			usleep(data->talk_window_time);//simulating the consideration of sending a message
 			if(data->is_noisemaker == 1){
 				pthread_mutex_lock(&channel_11lock);
-					usleep(data->dwell_noisemakers);//simulating noise
+					currentTime = time(NULL);
+					strcpy(noiseStart, ctime(&currentTime));
+					usleep(data->dwell_noisemakers);//simulating noise, take over the channel by using a lock
+					sprintf(noisefile, "noisemaker%d", data->nodeID);
+					strncat(noisefile, ".txt", sizeof(".txt"));
+					noise = fopen(noisefile, "a+");
 				pthread_mutex_unlock(&channel_11lock);
+				currentTime = time(NULL);
+				strcpy(noiseStop, ctime(&currentTime));
+				fprintf(noise, "Log for NOISEMAKER %d: with coordinates: x = %d, y = %d on channel %d\n", data->nodeID, data->x_coor, data->y_coor, 11);
+				fprintf(noise, "Started making noise at %s:\n", noiseStart);
+				fprintf(noise, "Stopped making noise at %s:\n\n", noiseStop);
+				fclose(noise);		
 			}else if(((random() % 100) + 1) < data->talk_probability){//decide whether to send message to global channel
 				messageData newMessage;
 				strcpy(newMessage.transMess, mess[random() % 25]);
@@ -397,31 +457,35 @@ int main(int argc, char** argv){
 	
 	pthread_t nodes[NUM_NODES];
 	nodeData nodeInfo[NUM_NODES];//data struct for each thread
-
-	pthread_mutex_init(&channel_1lock, NULL);
-	pthread_mutex_init(&channel_6lock, NULL);
-	pthread_mutex_init(&channel_11lock, NULL);
-
+	
+	pthread_mutexattr_settype(&type, PTHREAD_MUTEX_RECURSIVE);
+	pthread_mutex_init(&channel_1lock, &type);
+	pthread_mutex_init(&channel_6lock, &type);
+	pthread_mutex_init(&channel_11lock, &type);
+	pthread_mutex_init(&start, &type);
+	
+	pthread_condattr_setpshared(&cattr, PTHREAD_PROCESS_SHARED);
+	pthread_cond_init(&CV, &cattr);
+	
 	if(argc == 1){
 		puts("Running Simulation...");
 		for(i = 0; i < NUM_NODES; i++){
 			nodeInfo[i].nodeID = (random() % UINT_MAX) + 1;//set node Id, 4 bytes
 			nodeCache[i].nodeID = nodeInfo[i].nodeID;//line stay for testing and non testing
-			/*non-testing coordinate generation*/
 			nodeInfo[i].x_coor = (random() % 100) + 1;
 			nodeInfo[i].y_coor = (random() % 100) + 1;
 			nodeCache[i].x_coor = nodeInfo[i].x_coor;
 			nodeCache[i].y_coor = nodeInfo[i].y_coor;
 
-			nodeInfo[i].dwell_duration = 1000;
-			nodeInfo[i].dwell_probability = 1;
-			nodeInfo[i].transmission_time = 100;
-			nodeInfo[i].talk_window_time = 100;
-			nodeInfo[i].talk_probability = 10;
+			nodeInfo[i].dwell_duration = DWELL_DURATION;
+			nodeInfo[i].dwell_probability = DWELL_PROBABILITY;
+			nodeInfo[i].transmission_time = TRANSMISSION_TIME;
+			nodeInfo[i].talk_window_time = TALK_WINDOW_TIME;
+			nodeInfo[i].talk_probability = TALK_PROABILITY;
 			if(i < NUM_NOISE_MAKERS){//make desired amount of nodes noisemakers
 				nodeInfo[i].is_noisemaker = 1;
-				nodeInfo[i].dwell_noisemakers = (random() % 2000) + 1000;
-				nodeInfo[i].dwell_probability_noisemakers = 50;
+				nodeInfo[i].dwell_noisemakers = DWELL_NOISEMAKER_DURATION;
+				nodeInfo[i].dwell_probability_noisemakers = DWELL_NOISEMAKER_PROBABILITY;
 			}else{
 				nodeInfo[i].is_noisemaker = 0;
 				nodeInfo[i].dwell_noisemakers = 0;
@@ -433,7 +497,10 @@ int main(int argc, char** argv){
 				return 0;
 			}
 		}
-
+		
+		pthread_cond_signal(&CV);//signal all threads to start
+		flagStop = 1;
+		
 		/*Print grid to stdout*/
 		for(i = 1; i <= 100; i++){//iterate through y coor
 			if(i < 10){
@@ -471,6 +538,7 @@ int main(int argc, char** argv){
 			printf("%d: %d, x = %d, y = %d\n", nodeNum[i], nodeid[i], nodeX_coor[i], nodeY_coor[i]);
 		}
 		puts("Running Simulation...");
+		printf("%d nodes and %d noisemakers.\n", NUM_NODES - NUM_NOISE_MAKERS, NUM_NOISE_MAKERS);
 		
 		for (i = 0; i < NUM_NODES; ++i) {
 			pthread_join(nodes[i], NULL);
@@ -479,6 +547,8 @@ int main(int argc, char** argv){
 		pthread_mutex_destroy(&channel_1lock);
 		pthread_mutex_destroy(&channel_6lock);
 		pthread_mutex_destroy(&channel_11lock);
+		pthread_mutex_destroy(&start);
+		pthread_cond_destroy(&CV);
 		puts("Simulation Complete...");
 		//end if(argc == 1)
 	}else{

@@ -1,0 +1,30 @@
+Edward Burnham
+Michael Caldwell
+
+Problem Description Project 3B
+
+The major parts of our implementation are three global channel variables, a thread representing each node, with some of these nodes being noisemakers. Noisemakers act like regular nodes, but when they lock channels, they sleep for a period of time instead of sending a message. The variables dwell_duration, dewll_probability, transmission_time, etc. are contained in a struct which we created for each thread. dwell_duration is implemented with a usleep at the end of our main thread while loop. transmission_time and talk_window_time are implemented in a similiar fashion using usleep, only at their appropriate locations in the scheme. Dwell and talk probabilities are implemented using a random number generator between 1 and 100, and the probability which is stored as an int representing percentage. As each node transmits a message, by placing it into one of the global channel buffers, other nodes are scanning the channels looking for messages which are in range. When a message is found which is in range, the message is stored by the node and rebroadcasted.
+
+Concurrency is our main focus for this project and we have provided concurrency in two ways: with mutex locks and semaphores. With mutex locks we implemented a ticket-queue system to ensure fairness. With the semaphores we set the scheduler to use a round-robin scheme to similiar effect. We maximize parallelism by allowing two nodes to transmit at the same time, all while ensuring mutual exclusion.
+
+Our assumptions for the project are as follows:
+	No two threads can occupy the same node.
+	Dwell duration is assumed to be in millisections.
+	Probabilities are stored as ints which represent a percentage.
+	Talk_window_time is a multiple of dwell_duration.
+	'At the same time' is defined as being within the same transmission window.
+	The thread settings are for every thread.
+	Noisemakers are very powerful and lock channels globally.
+	Maximum number of nodes is 350.
+
+Questions:
+Q: Deadlock is an important consideration in synchronization. What deadlock risks exist in this system? How can you avoid them?
+A: A deadlock risk could occur if a thread were to do request other resources while holding a lock. We designed our system so that our threads never request other resources while holding a lock.
+
+Q: What special considerations must be made to accommodate noisemakers? What happens if a noisemaker
+arrives while a regular node is mid-transmission?
+A: We designed our noisemakers to be as simple as possible. A noisemaker is like a regular node in most of its functions, only when it holds a lock it sleeps for a random amount of time instead of sending a message. If a noisemaker arrives while a regular node is mid-transmission, the transmission is completed and then the noisemaker then takes over the channel.
+
+Q: How can somebody confirm the system actually works correctly? What set of parameters will make
+synchronization issues likely, but will still be something that can be easily interpreted?
+A: We have provided a map and comprehensive log files which detail message source and destination. Someone could use the map to identify a cluster of nodes, then find the corresponding node ID in the table, and then check the log files to see how messages were sent and received. By making dwell_duration, talk_window_time and transmission_time low, and then making num_noisemakers and dwell_probability high, we will have a large amount of messages being sent in a short amount of time. This should provide an environment with many opportunities for concurrency problems.

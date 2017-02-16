@@ -1,2 +1,0 @@
-Edward Burnham
-Michael Caldwell
