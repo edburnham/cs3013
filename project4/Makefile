@@ -1,17 +1,10 @@
-all: macsem macmutex
- 
-macsem: macsem.o
-	gcc -Wall -pthread macsem.o -o macsem
+all: vmem
 
-macmutex: macmutex.o
-	gcc -Wall -pthread macmutex.o -o macmutex
-	
-macsem.o: macsem.c
-	gcc -Wall -pthread -c macsem.c
-	
-macmutex.o: macmutex.c
-	gcc -Wall -pthread -c macmutex.c
-	
+vmem: vmem.o
+	gcc -Wall vmem.o -o vmem
+
+vmem.o: vmem.c
+	gcc -Wall -c vmem.c
+
 clean:
-	rm -f macsem.o macsem 
-	rm -f macmutex.o macmutex
+	rm -f vmem.o vmem
