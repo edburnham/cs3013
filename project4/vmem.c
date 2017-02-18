@@ -40,9 +40,10 @@ int main(void){
 		printf("Instruction? ");
 		fgets(input, sizeof(input), stdin);
 		length = strlen(input);
+		input[length - 1] = '\0';
 		
 		if(length < 14){
-			input[length + 1] = '\0';
+			//input[length + 1] = '\0';
 			/*Parse input and check for error on input values*/
 			for(i = 0; i < length + 1; i++){
 				if(input[i] == ',' || input[i] == '\0'){
@@ -109,7 +110,7 @@ int main(void){
 			}
 			
 			/*************************************************Begin executing commands*************************************************/	
-			if(strncmp("map", instr_type, strlen(instr_type)) == 0){
+			/*if(strncmp("map", instr_type, strlen(instr_type)) == 0){
 				if(hardwareReg[atoi(pid)] != 0){
 					printf("ERROR: virtual page already mapped into physical frame %d", hardwareReg[atoi(pid)]);
 					return 0;
@@ -128,7 +129,7 @@ int main(void){
 
 
 
-			}/*else if(strncmp("store", temp, strlen(temp)) == 0){
+			}else if(strncmp("store", temp, strlen(temp)) == 0){
 
 			}else if(strncmp("load", temp, strlen(temp)) == 0){
 
