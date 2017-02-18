@@ -9,6 +9,20 @@
 #define SIZE 64
 
 char memory[SIZE];
+int freeList[4];
+int hardwareReg[4];
+
+int checkFreeList(){
+	int i;
+	
+	for(i = 0; i < 4; i++){
+		if(freeList[i] == 0){
+			freeList[i] = 1;
+			return i + 1;
+		}
+	}
+	return 0;//zero not a frame number
+}
 
 int main(void){
 	char input[20];
@@ -19,15 +33,18 @@ int main(void){
 	char value[6];
 	
 	char pageTable[16];
-	int freeList[4];
-	int hardwareReg[4];
 	
+	int PID;
 	int i;
 	int a = 0;
 	int next = 0;
 	int type = 0;
 	int openPFN = 0;
 	int length = 0;
+	
+	memset(memory, 0, sizeof(memory));
+	memset(freeList, 0, sizeof(freeList));
+	memset(hardwareReg, 0, sizeof(hardwareReg));
 	
 	while(1){
 		memset(input, 0, sizeof(input));
@@ -110,32 +127,36 @@ int main(void){
 			}
 			
 			/*************************************************Begin executing commands*************************************************/	
-			/*if(strncmp("map", instr_type, strlen(instr_type)) == 0){
-				if(hardwareReg[atoi(pid)] != 0){
-					printf("ERROR: virtual page already mapped into physical frame %d", hardwareReg[atoi(pid)]);
-					return 0;
+			PID = atoi(pid);
+			if(strncmp("map", instr_type, strlen(instr_type)) == 0){
+				if(hardwareReg[PID] != 0){
+					//printf("ERROR: virtual page already mapped into physical frame %d", hardwareReg[atoi(pid)]);
+					
 				}else{
-					for(i = 0; i < 4; i++){
-						if(freeList[i] == 0){
-							openPFN = i + 1;
-							freeList[i] = 1;
-							break;
-						}
+					
+					openPFN = checkFreeList();
+					if(openPFN != 0){
+						hardwareReg[PID] = openPFN;
+						pageTable[0] = (char)PID;//PID
+						pageTable[1] = (char)openPFN;//PFN
+						//pageTable[2] = 
+						memcpy(&memory[16 * (openPFN - 1)] , &pageTable, sizeof(pageTable));
+						/*if(){
+							
+						}*/
+					}else{
+						puts("Physical memory full");
 					}
-
-					hardwareReg[atoi(pid)] = openPFN;//where page table resides (frame number 1 - 4)
-
+					//where page table resides (frame number 1 - 4)
+					printf("Put page table for PID %d into physical frame %d", atoi(pid), hardwareReg[PID]);
+					
 				}
 
 
 
-			}else if(strncmp("store", temp, strlen(temp)) == 0){
+			}
 
-			}else if(strncmp("load", temp, strlen(temp)) == 0){
-
-			}*/
-
-			printf("%s %s %s %s\n", pid, instr_type, virt_addr, value);
+			//printf("%s %s %s %s\n", pid, instr_type, virt_addr, value);
 		
 		
 		}else{
