@@ -15,20 +15,24 @@ char instr_type[6];
 char virt_addr[6];
 char value[6];
 
-int freeList[4];
-int hardwareReg[4];
+int freeList[4] = {0};;
+int hardwareReg[4] = {0};;
 int openPFNPage = 0;
 int openPFNTable = 0; 
 int countPID[4] = {0};
-int vFreeList[4][4];
+int vFreeList[4][4] = {{0}, {0}};;
+int RReviction = 0;
+
+FILE* hardDisk;
+int hardDiskInd = 5;
 
 int checkFreeList(){
     int i;
     for(i = 0; i < 4; i++){
-	if(freeList[i] == 0){
-	    freeList[i] = 1;
-	    return i; // returns PFN 1,2,3,4
-	}
+		if(freeList[i] == 0){
+			freeList[i] = 1;
+			return i; // returns PFN 1,2,3,4
+		}
     }  
     return -1;// no free frames
 }
@@ -41,15 +45,14 @@ void map(int PID, int VPN, char R_W){
 
 			if (vFreeList[PID][VPN] != 1){
 				vFreeList[PID][VPN] = 1;
-
 				ptOffset = countPID[PID]*4;
-				memory[(hardwareReg[PID])*16 + ptOffset] = (char)PID;//PID    /update page table
+				memory[hardwareReg[PID]*16 + ptOffset] = (char)PID;//PID    /update page table
 				ptOffset++;
-				memory[(hardwareReg[PID])*16 + ptOffset] = (char)VPN;
+				memory[hardwareReg[PID]*16 + ptOffset] = (char)VPN;
 				ptOffset++;
-				memory[(hardwareReg[PID])*16 + ptOffset] = (char)openPFNPage;//PFN
+				memory[hardwareReg[PID]*16 + ptOffset] = (char)openPFNPage;//PFN
 				ptOffset++;
-				memory[(hardwareReg[PID])*16 + ptOffset] = R_W; //R/W bit
+				memory[hardwareReg[PID]*16 + ptOffset] = R_W; //R/W bit
 				countPID[PID]++;
 				printf("Mapped virtual address %d (page %d) into physical frame %d\n", atoi(virt_addr), countPID[PID], openPFNPage);
 			}
@@ -71,10 +74,10 @@ void map(int PID, int VPN, char R_W){
 			hardwareReg[PID] = openPFNTable;			
 			if (vFreeList[PID][VPN] != 1){
 				vFreeList[PID][VPN] = 1;
-				memory[(hardwareReg[PID])*16] = (char)PID;//PID
-				memory[(hardwareReg[PID])*16 + 1] = (char)VPN;//PID
-				memory[(hardwareReg[PID])*16 + 2] = (char)openPFNPage;//PFN
-				memory[(hardwareReg[PID])*16 + 3] = R_W; //R/W bit
+				memory[hardwareReg[PID]*16] = (char)PID;//PID
+				memory[hardwareReg[PID]*16 + 1] = (char)VPN;//VPN
+				memory[hardwareReg[PID]*16 + 2] = (char)openPFNPage;//PFN
+				memory[hardwareReg[PID]*16 + 3] = R_W; //R/W bit
 				countPID[PID]++;
 				printf("Put page table for PID %d into physical frame %d\n", PID, openPFNTable);
 				printf("Mapped virtual address %d (page %d) into physical frame %d\n", atoi(virt_addr), VPN, openPFNPage);
@@ -93,14 +96,39 @@ int store(int PID, int virt_addr, int val){
 	int VPN = virt_addr/16;
 	int PFN = 0;
 	int offset = virt_addr - VPN*16;
+	int R_W = 0;
 	int i = 0;
+	int check = 0;
+	
+	check = checkFreeList();
+	if(check == -1){
+		if(++RReviction == 4){
+			RReviction = 0;	
+		}
+		if(hardwareReg[PID] != RReviction){
+			hardDisk = fopen("hardDisk.txt", "a+");
+			fprintf(hardDisk, "#%d\n",hardDiskInd);
+			fprintf(hardDisk, "%d\n", (int)memory[hardwareReg[RReviction]*16]);//PID
+			fprintf(hardDisk, "%d\n", (int)memory[hardwareReg[RReviction]*16 + 1]);//VPN
+			fprintf(hardDisk, "%d\n", hardDiskInd);//PFN is now considered on the hard disk
+			fprintf(hardDisk, "%d\n", (int)memory[hardwareReg[RReviction]*16 + 3]);//R/W bit			
+			hardDiskInd++;
+			fclose(hardDisk);
+		}
+		
+	}
 	
 	for(i = 0; i < 4; i++){
-		if((int)memory[(hardwareReg[PID])*16 + i*4 + 1] == VPN){
-			PFN = memory[(hardwareReg[PID])*16 + i*4 + 2];
-			memory[PFN*16 + offset] = (char)val;
-			printf("Stored value %d at virtual address %d (physical address %d)\n", val, virt_addr, PFN*16 + offset);
-			return 1;
+		if((int)memory[hardwareReg[PID]*16 + i*4 + 1] == VPN){
+			PFN = memory[hardwareReg[PID]*16 + i*4 + 2];
+			R_W = memory[hardwareReg[PID]*16 + i*4 + 3];
+			if(R_W == 0){
+				return -1;
+			}else{
+				memory[PFN*16 + offset] = (char)val;
+				printf("Stored value %d at virtual address %d (physical address %d)\n", val, virt_addr, PFN*16 + offset);
+				return 1;
+			}
 		}
 	}
 	return 0;
@@ -128,8 +156,7 @@ int load(int PID, int virt_addr){
 int main(void){
     char input[20];
     char temp[6];
-   
-		
+   		
     int PID = 0;
     int i;
     int a = 0;
@@ -139,7 +166,8 @@ int main(void){
     int val = 0;
     int VPN = 0;
 	int address = 0;
-    
+	int storeRetVal = 0;
+	
     memset(vFreeList, 0, sizeof(vFreeList));
     memset(countPID, 0, sizeof(countPID));	
     memset(memory, 0, sizeof(memory));
@@ -161,7 +189,7 @@ int main(void){
 		next = 0;
 		a = 0;
 		
-		if(strncmp("\0", input, 1) == 0){
+		if(strncmp("\0", input, 1) == 0){//reached end of file
 			return 0;
 		}
 		
@@ -219,8 +247,11 @@ int main(void){
 						PID = atoi(pid);
 						address = atoi(virt_addr);
 						val = atoi(value);
-						if(store(PID, address, val) == 0){
+						storeRetVal = store(PID, address, val);
+						if(storeRetVal == 0){
 							puts("store failed!");	
+						}else if(storeRetVal == -1){
+							puts("permissions only allow reading!");
 						}
 					}
 					
