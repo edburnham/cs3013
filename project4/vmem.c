@@ -51,7 +51,7 @@ int main(void){
     char value[6];
 		
     int PID = 0;
-	int ptOffset = 0;
+    int ptOffset = 0;
     int i;
     int a = 0;
     int next = 0;
@@ -59,7 +59,9 @@ int main(void){
     int openPFN = 0;
     int length = 0;
     int countPID[4] = {0};
-	
+    int vFreeList[4][4];
+
+    memset(countPID, 0, sizeof(coutPID));	
     memset(memory, 0, sizeof(memory));
     memset(freeList, 0, sizeof(freeList));
     memset(hardwareReg, 0, sizeof(hardwareReg));
@@ -145,6 +147,7 @@ int main(void){
 			
 	    /*************************************************Begin executing commands*************************************************/	
 	    PID = atoi(pid);
+	    vAddr = atoi(virt_addr)/16;
 	    if(strncmp("map", instr_type, strlen(instr_type)) == 0){
 		if(hardwareReg[PID] != 0){
 		    //printf("ERROR: virtual page already mapped into physical frame %d", hardwareReg[atoi(pid)]);
@@ -157,6 +160,14 @@ int main(void){
 				ptOffset++;
 			memory[(hardwareReg[PID] - 1)*16 + ptOffset] = value[0]; //R/W bit
 			countPID[PID]++;
+
+			if (vFreeList[PID][vAddr] != 1){
+			    vFreeList[PID][vAddr] = 1;
+			}
+			else {
+			    puts("You dun goofed.");
+			}
+			
 		    }else{
 			puts("Physical memory full");
 		    }   
@@ -167,10 +178,20 @@ int main(void){
 		    openPFN = checkFreeList(1); // passing 1 to indicate we're creating a page table
 		    if(openPFN != 0){
 			hardwareReg[PID] = openPFN;
+			
+			
+			
 			memory[(hardwareReg[PID] - 1)*16] = (char)PID;//PID
 			memory[(hardwareReg[PID] - 1)*16 + 1] = (char)openPFN;//PFN
 			memory[(hardwareReg[PID] - 1)*16 + 2] = value[0]; //R/W bit
 			countPID[PID]++;
+
+			if (vFreeList[PID][vAddr] != 1){
+			    vFreeList[PID][vAddr] = 1;
+			}
+			else {
+			    puts("You dun goofed.");
+			}
 			
 		    }else{
 			puts("Physical memory full");
