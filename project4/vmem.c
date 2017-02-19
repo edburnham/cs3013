@@ -24,7 +24,7 @@ int checkFreeList(int pageTable){
 		for(i = 0; i < 4; i++){
 		    if(freeList[i] == 0){
 			freeList[i] = 1;
-			return ptLoc;
+			return ptLoc + 1;
 		    }
 		}
 	    }	    
@@ -34,7 +34,7 @@ int checkFreeList(int pageTable){
 	for(i = 0; i < 4; i++){
 	    if(freeList[i] == 0){
 		freeList[i] = 1;
-		return i;
+		return i + 1;
 	    }
 	}
     }
@@ -49,10 +49,9 @@ int main(void){
     char instr_type[6];
     char virt_addr[6];
     char value[6];
-	
-    char pageTable[16];
-	
-    int PID;
+		
+    int PID = 0;
+	int ptOffset = 0;
     int i;
     int a = 0;
     int next = 0;
@@ -79,7 +78,6 @@ int main(void){
 	input[length - 1] = '\0';
 		
 	if(length < 14){
-	    //input[length + 1] = '\0';
 	    /*Parse input and check for error on input values*/
 	    for(i = 0; i < length + 1; i++){
 		if(input[i] == ',' || input[i] == '\0'){
@@ -152,26 +150,26 @@ int main(void){
 		    //printf("ERROR: virtual page already mapped into physical frame %d", hardwareReg[atoi(pid)]);
 		    openPFN = checkFreeList(0); // passing 0 to indicate not creating page table
 		    if(openPFN != 0){
-			hardwareReg[PID] = openPFN;
-			pageTable[0+4*countPID[PID]] = (char)PID;//PID
-			pageTable[1+4*countPID[PID]] = (char)openPFN;//PFN
-			pageTable[2+4*countPID[PID]] = (char)value; //R/W bit
-			memcpy(&memory[] , &pageTable, sizeof(pageTable));
+				ptOffset = countPID[PID]*4;
+			memory[(hardwareReg[PID] - 1)*16 + ptOffset] = (char)PID;//PID    /update page table
+				ptOffset++;
+			memory[(hardwareReg[PID] - 1)*16 + ptOffset] = (char)openPFN;//PFN
+				ptOffset++;
+			memory[(hardwareReg[PID] - 1)*16 + ptOffset] = value[0]; //R/W bit
 			countPID[PID]++;
 		    }else{
 			puts("Physical memory full");
 		    }   
-		    printf("Mapped virtual address %s (page %d) into physical frame %d", virt_addr, countPID[PID], openPFN);
+		    printf("Mapped virtual address %s (page %d) into physical frame %d", virt_addr, countPID[PID], openPFN - 1);
 		
 		}else{
 					
 		    openPFN = checkFreeList(1); // passing 1 to indicate we're creating a page table
 		    if(openPFN != 0){
 			hardwareReg[PID] = openPFN;
-			pageTable[0] = (char)PID;//PID
-			pageTable[1] = (char)openPFN;//PFN
-			pageTable[2] = (char)value; //R/W bit
-			memcpy(&memory[16 * (openPFN - 1)] , &pageTable, sizeof(pageTable));
+			memory[(hardwareReg[PID] - 1)*16] = (char)PID;//PID
+			memory[(hardwareReg[PID] - 1)*16 + 1] = (char)openPFN;//PFN
+			memory[(hardwareReg[PID] - 1)*16 + 2] = value[0]; //R/W bit
 			countPID[PID]++;
 			
 		    }else{
@@ -179,7 +177,7 @@ int main(void){
 		    }
 		    //where page table resides (frame number 1 - 4)
 		    printf("Put page table for PID %d into physical frame %d", atoi(pid), hardwareReg[PID]);
-		    printf("Mapped virtual address %s (page %d) into physical frame %d", virt_addr, countPID[PID], openPFN);
+		    printf("Mapped virtual address %s (page %d) into physical frame %d", virt_addr, countPID[PID], openPFN - 1);
 		}
 
 
