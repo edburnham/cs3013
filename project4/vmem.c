@@ -16,11 +16,11 @@ char virt_addr[6];
 char value[6];
 
 int freeList[4] = {0};;
-int hardwareReg[4] = {0};;
+int hardwareReg[4] = {0};
 int openPFNPage = 0;
 int openPFNTable = 0; 
 int countPID[4] = {0};
-int vFreeList[4][4] = {{0}, {0}};;
+int vFreeList[4][4] = {{0}, {0}};
 int RReviction = 0;
 
 FILE* hardDisk;
@@ -28,36 +28,67 @@ int hardDiskInd = 5;
 
 int checkPTSwap(int PID) {
     int check;
-    int i;
-    
-    if (hardwareReg[PID] > 4) {
-	check = checkFreeList();
-    
-	if(check == -1){
-	    if(++RReviction == 4){
-		RReviction = 0;	
-	    }
+    int i, c, n;
+	char diskLinePID[5];
+	char diskLineVPN[5];
+    char diskLineRReviction[5];
+	char diskLineR_W[5];
 	
-	    hardDisk = fopen("hardDisk.txt", "a+");
-	    fprintf(hardDisk, "#%d\n",hardDiskInd);
-	    fprintf(hardDisk, "%d\n", (int)memory[hardwareReg[RReviction]*16]);//PID
-	    fprintf(hardDisk, "%d\n", (int)memory[hardwareReg[RReviction]*16 + 1]);//VPN
-	    fprintf(hardDisk, "%d\n", hardDiskInd);//PFN is now considered on the hard disk
-	    fprintf(hardDisk, "%d\n", (int)memory[hardwareReg[RReviction]*16 + 3]);//R/W bit			
-	    hardDiskInd++;
-	    fclose(hardDisk);
-	    
-	    for (i = (hardDiskInd - 1); i < 0; i--) {
-		
-	    }
-	    
-	}
+    if (hardwareReg[PID] > 4) {
+		check = checkFreeList();
+    
+		if(check == -1){
+			if(++RReviction == 4){
+			RReviction = 0;	
+			}
+			
+			if((int)memory[hardwareReg[RReviction]*16 + 1] != 0){//dont evict page table
+				hardDisk = fopen("hardDisk.txt", "a+");
+				fprintf(hardDisk, "#%d\n",hardDiskInd);
+				fprintf(hardDisk, "%d\n", (int)memory[hardwareReg[RReviction]*16]);//PID
+				fprintf(hardDisk, "%d\n", (int)memory[hardwareReg[RReviction]*16 + 1]);//VPN
+				fprintf(hardDisk, "%d\n", RReviction);//PFN is now considered on the hard disk
+				fprintf(hardDisk, "%d\n", (int)memory[hardwareReg[RReviction]*16 + 3]);//R/W bit			
+				hardDiskInd++;
+				fclose(hardDisk);
+				
+				do{
+					c = fgetc(hardDisk);
+					if(c == '#'){
+						n = fgetc(hardDisk);
+						if(n = (char)hardwareReg[PID]){
+							
+							//while(diskLine[0] != '#'){
+								getline(diskLinePID, 4, hardDisk);
+								getline(diskLineVPN, 4, hardDisk);
+								getline(diskLineRReviction, 4, hardDisk);
+								getline(diskLineR_W, 4, hardDisk);
+								strcpy(memory[hardwareReg[RReviction]*16], diskLinePID);
+								strcpy(memory[hardwareReg[RReviction]*16 + 1]), diskLineVPN);
+								strcpy(diskLineRReviction, (char)RReviction);
+								strcpy(memory[hardwareReg[RReviction]*16 + 3], diskLineR_W);
+								(int)memory[hardwareReg[RReviction]*16];
+								(int)memory[hardwareReg[RReviction]*16 + 1]);//VPN
+							//}
+							
+							
+						}
+					}
+				}while(c != EOF);
+				
+			}
+			
+			
+
+
+		}
     }
     else {
 	return 0;
     }
     	
 }
+
 int checkFreeList(){
     int i;
     for(i = 0; i < 4; i++){
