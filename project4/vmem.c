@@ -30,11 +30,16 @@ int firstSwap = 0;
 
 FILE* hardDisk;
 
-void swap() {//
+void swap(int PID) {// Done - untested
     int i;
     int isPageTable = 0;
     int pfnOfPage = 0;
-    
+
+    if (RR_PIDevication == PID){ //if its our own PID, skip it.
+	if(++RR_PIDeviction == 4){
+	    RR_PIDeviction = 0;	
+	}
+    }
     for(i = 0; i < 4; i++){
 	if (hardwareReg[i] == RR_PIDeviction){
 	    isPageTable = 1;
@@ -121,13 +126,13 @@ int checkFreeList(){
     return -1;// no free frames
 }
 
-void map(int PID, int VPN, int R_W){
+void map(int PID, int VPN, int R_W){ // NEEDS FIXIN
     int ptOffset = 0;
 
     if(hardwareReg[PID] != -1){//adding a page to an existing page table
 	openPFNPage = checkFreeList(); 
 	if(openPFNPage == -1){
-	    swap();
+	    swap(PID);
 	    openPFNPage = checkFreeList();
 	    puts("Swapping");
 	}	
@@ -148,11 +153,12 @@ void map(int PID, int VPN, int R_W){
 	    printf("Error: virtual page already mapped into physical frame %d.\n", memory[(hardwareReg[PID])*16 + 2]);
 	}
 
-    }else{	//create page table	
+    }else{	//create page table --- THIS IS FUCKED NEED TO REVISIT	
 	openPFNTable = checkFreeList(); 
 	openPFNPage = checkFreeList();
 	if ((openPFNPage == -1) && (openPFNTable == -1)){
-	    swap(); // need to swap twice or check logic here.
+	    swap(PID); // need to swap twice or check logic here.
+	    
 	    openPFNTable = checkFreeList(); 
 	    openPFNPage = checkFreeList();
 	    puts("Swapping");
@@ -180,7 +186,7 @@ void map(int PID, int VPN, int R_W){
     }
 }
 
-int store(int PID, int virt_addr, int val){
+int store(int PID, int virt_addr, int val){ // NEEDS FIXIN
     int VPN = virt_addr/16;
     int PFN = 0;
     int offset = virt_addr - VPN*16;
@@ -192,7 +198,7 @@ int store(int PID, int virt_addr, int val){
 	    openPFNTable = checkFreeList();
 	    openPFNPage = checkFreeList();
 	    if(openPFNTable == -1 && openPFNPage == -1){
-		swap();
+		swap(PID);
 		openPFNTable = checkFreeList();
 		openPFNPage = checkFreeList();
 	    }
@@ -227,19 +233,34 @@ int load(int PID, int virt_addr){
 	//this means page table is on disk, need to swap it in.
 	openPFNTable = checkFreeList();
 	if (openPFNTable == -1){
-	    swap();
+	    swap(PID);
 	    openPFNTable = checkFreeList();
 	}
 	swapIn(PID, VPN, openPFNTable, 1); // swapping in a table.
-    }
-    
-    for(i = 0; i < 4; i++){
-	if((int)memory[(hardwareReg[PID])*16 + i*4 + 1] == VPN){
-	    PFN = memory[(hardwareReg[PID])*16 + i*4 + 2];
-	    value = memory[PFN*16 + offset];
-	    printf("The value %d is virtual address %d (physical address %d)\n", value, virt_addr, PFN*16 + offset);
-	    return 1;
+	// Then, we still need to swap the page
+	openPFNPage = checkFreeList();
+	if (openPFNPage == -1){
+	    swap(PID); // swappin out a page
+	    openPFNPage = checkFreeList();
 	}
+	swapIn(PID,VPN,openPFNPage,0); // swapping da page
+	PFN = memory[(openPFNPage*16) + VPN*4 + 2];
+	value = memory[PFN*16 + offset];
+	printf("The value %d is virtual address %d (physical address %d)\n", value, virt_addr, PFN*16 + offset);
+	return 1;
+    }
+    else {
+	// we just need to swap in a page
+	openPFNPage = checkFreeList();
+	if (openPFNPage == -1){
+	    swap(PID); // swappin out a page
+	    openPFNPage = checkFreeList();
+	}
+	swapIn(PID,VPN,openPFNPage,0); // swapping da page
+	PFN = memory[(openPFNPage*16) + VPN*4 + 2];
+	value = memory[PFN*16 + offset];
+	printf("The value %d is virtual address %d (physical address %d)\n", value, virt_addr, PFN*16 + offset);
+	return 1;
     }
     return 0;
 }
