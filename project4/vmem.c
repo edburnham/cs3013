@@ -158,7 +158,7 @@ void map(int PID, int VPN, int R_W){ // NEEDS FIXIN
 	openPFNPage = checkFreeList();
 	if ((openPFNPage == -1) && (openPFNTable == -1)){
 	    swap(PID); // need to swap twice or check logic here.
-	    
+	    swap(PID); // lets see what happens if we just swap twice lol
 	    openPFNTable = checkFreeList(); 
 	    openPFNPage = checkFreeList();
 	    puts("Swapping");
@@ -194,32 +194,78 @@ int store(int PID, int virt_addr, int val){ // NEEDS FIXIN
     int i = 0;
 
     if(hardwareReg[PID] > 3){
-	if(firstSwap == 1){
+	//this means page table is on disk, need to swap it in.
+	openPFNTable = checkFreeList();
+	if (openPFNTable == -1){
+	    swap(PID);
 	    openPFNTable = checkFreeList();
+	}
+	swapIn(PID, VPN, openPFNTable, 1); // swapping in a table.
+	// Then, we still need to swap the page
+	openPFNPage = checkFreeList();
+	if (openPFNPage == -1){
+	    swap(PID); // swappin out a page
 	    openPFNPage = checkFreeList();
-	    if(openPFNTable == -1 && openPFNPage == -1){
-		swap(PID);
-		openPFNTable = checkFreeList();
-		openPFNPage = checkFreeList();
-	    }
-	    swapIn(PID, VPN, openPFNTable, openPFNPage);
-	    firstSwap = 0;
+	}
+	swapIn(PID,VPN,openPFNPage,0); // swappin in the page
+	PFN = memory[(openPFNPage*16) + VPN*4 + 2];
+	if(R_W == 0){
+	    return -1;
+	}else{
+	    memory[PFN*16 + offset] = (char)val;//store
+	    printf("Stored value %d at virtual address %d (physical address %d)\n", val, virt_addr, PFN*16 + offset);
+	    return 1;
 	}
     }
-    for(i = 0; i < 4; i++){
-	if((int)memory[hardwareReg[PID]*16 + i*4 + 1] == VPN){
-	    PFN = memory[hardwareReg[PID]*16 + i*4 + 2];
-	    R_W = memory[hardwareReg[PID]*16 + i*4 + 3];
-	    if(R_W == 0){
-		return -1;
-	    }else{
-		memory[PFN*16 + offset] = (char)val;//store
-		printf("Stored value %d at virtual address %d (physical address %d)\n", val, virt_addr, PFN*16 + offset);
-		return 1;
-	    }
+    else {
+	// we just need to swap in a page
+	openPFNPage = checkFreeList();
+	if (openPFNPage == -1){
+	    swap(PID); // swappin out a page
+	    openPFNPage = checkFreeList();
+	}
+	swapIn(PID,VPN,openPFNPage,0); // swapping da page
+	PFN = memory[(openPFNPage*16) + VPN*4 + 2];
+	value = memory[PFN*16 + offset];
+	printf("The value %d is virtual address %d (physical address %d)\n", value, virt_addr, PFN*16 + offset);
+	return 1;if(R_W == 0){
+	    return -1;
+	}else{
+	    memory[PFN*16 + offset] = (char)val;//store
+	    printf("Stored value %d at virtual address %d (physical address %d)\n", val, virt_addr, PFN*16 + offset);
+	    return 1;
 	}
     }
     return 0;
+
+    /*
+      if(hardwareReg[PID] > 3){ // is ppage table on disk?
+      if(firstSwap == 1){
+      openPFNTable = checkFreeList();
+      openPFNPage = checkFreeList();
+      if(openPFNTable == -1 && openPFNPage == -1){
+      swap(PID);
+      openPFNTable = checkFreeList();
+      openPFNPage = checkFreeList();
+      }
+      swapIn(PID, VPN, openPFNTable, openPFNPage);
+      firstSwap = 0;
+      }
+      }
+      for(i = 0; i < 4; i++){
+      if((int)memory[hardwareReg[PID]*16 + i*4 + 1] == VPN){
+      PFN = memory[hardwareReg[PID]*16 + i*4 + 2];
+      R_W = memory[hardwareReg[PID]*16 + i*4 + 3];
+      if(R_W == 0){
+      return -1;
+      }else{
+      memory[PFN*16 + offset] = (char)val;//store
+      printf("Stored value %d at virtual address %d (physical address %d)\n", val, virt_addr, PFN*16 + offset);
+      return 1;
+      }
+      }
+      }
+      return 0;*/
 }
 
 int load(int PID, int virt_addr){
