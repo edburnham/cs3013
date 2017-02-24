@@ -40,13 +40,27 @@ void swap(int PID) {// Done - untested
 			RR_PIDeviction = 0;	
 		}
 	}
-	for(i = 0; i < 4; i++){
+	/*for(i = 0; i < 4; i++){
 		if (hardwareReg[i] == RR_PIDeviction && i != PID){
 			isPageTable = 1;
 			temp2 = i;
 			break;
 		}
-	}
+	}*/
+	for(i = 0; i < 4; i++){
+               if (hardwareReg[i] == RR_PIDeviction && i != PID){
+                       isPageTable = 1;
+                       temp2 = i;
+                       for(i = 0; i < 4; i++){
+                           if (memory[hardwareReg[PID]*16 + (4*i+2)] < 3){
+                               RR_PIDeviction = memory[hardwareReg[PID]*16 + (4*i+2)];
+                               break;
+                           }
+                       }
+                       break;
+               }
+       }
+	
 	if (isPageTable){
 		temp = hardwareReg[temp2];
 		hardwareReg[temp2] = diskLen + 4; 
@@ -92,7 +106,7 @@ void swapIn(int PID, int VPN, int openPFN, int isTable){
 
 	if(isTable) { //It's a page table!
 		diskIndex = hardwareReg[PID] - 4;
-		hardDisk = fopen("hardDisk.txt", "r");	
+		hardDisk = fopen("hardDisk.txt", "a+");	
 		if(fseek(hardDisk, diskIndex, SEEK_SET) < 0){
 			puts("lseek failed");
 		}
@@ -106,7 +120,7 @@ void swapIn(int PID, int VPN, int openPFN, int isTable){
 	else { // it's just a page
 		diskIndex = memory[hardwareReg[PID]*16 + (VPN*4 + 2)] - 4; // grab the diskIndex of the page from the page table located in the PFN field
 		memory[hardwareReg[PID]*16 + (VPN*4 + 2)] = openPFN; // set the new pfn in the page table.
-		hardDisk = fopen("hardDisk.txt", "r");
+		hardDisk = fopen("hardDisk.txt", "a+");
 		
 		if(fseek(hardDisk, diskIndex, SEEK_SET) < 0){
 			puts("lseek failed");
@@ -256,6 +270,7 @@ int store(int PID, int virt_addr, int val){ // NEEDS FIXIN
 		PFN = memory[hardwareReg[PID]*16 + VPN*4 + 2];
 		R_W = memory[hardwareReg[PID]*16 + VPN*4 + 3];
 		printf("3rw = %d    %d\n\n", R_W, memory[hardwareReg[PID]*16 + VPN*4 + 3]);
+		printf("VAL = %d\n", val);
 		if(R_W == 0){
 			puts("Error: writes are not allowed to this page");
 			return 1;
@@ -288,7 +303,8 @@ int load(int PID, int virt_addr){
 			swap(PID); // swappin out a page
 			openPFNPage = checkFreeList();
 		}
-		swapIn(PID, VPN, openPFNPage, 1); // swapping da page
+		puts("here1");
+		swapIn(PID, VPN, openPFNPage, 0); // swapping da page
 		value = memory[openPFNPage*16 + offset];
 		printf("The value %d is virtual address %d (physical address %d)\n", value, virt_addr, openPFNPage*16 + offset);
 		return 0;
@@ -300,11 +316,13 @@ int load(int PID, int virt_addr){
 			swap(PID); // swappin out a page
 			openPFNPage = checkFreeList();
 		}
+		puts("here2");
 		swapIn(PID, VPN, openPFNPage, 0); // swapping da page
 		value = memory[openPFNPage*16 + offset];
 		printf("The value %d is virtual address %d (physical address %d)\n", value, virt_addr, openPFNPage*16 + offset);
 		return 0;
 	}else{
+		puts("here3");
 		PFN = memory[(hardwareReg[PID]*16) + VPN*4 + 2];
 		value = memory[PFN*16 + offset];
 		printf("The value %d is virtual address %d (physical address %d)\n", value, virt_addr, PFN*16 + offset);
