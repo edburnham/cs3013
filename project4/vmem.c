@@ -67,12 +67,12 @@ void swap(int PID) {// Done - untested
 		hardDisk = fopen("hardDisk.txt", "a+");//evict full page table
 		//fwrite(&memory[temp*16], sizeof(char), 1, hardDisk);//PID
 		//fputc(memory[temp*16], hardDisk);
-		fprintf(hardDisk, "%d\n", memory[temp*16]);
+		fprintf(hardDisk, "%d", memory[temp*16]);
 		diskLen++;
 		for(i = 1; i < 16; i++){
 			//fwrite(&memory[temp*16 + i], sizeof(char), 1, hardDisk);
 			//fputc(memory[temp*16 + i], hardDisk);
-			fprintf(hardDisk, "%d\n", memory[temp*16 + i]);
+			fprintf(hardDisk, "%d", memory[temp*16 + i]);
 			diskLen++;
 		}		
 		fclose(hardDisk);
@@ -102,12 +102,12 @@ void swap(int PID) {// Done - untested
 		hardDisk = fopen("hardDisk.txt", "a+");
 		//fwrite(&memory[RR_PIDeviction*16], sizeof(char), 1, hardDisk);//PID
 		//fputc(memory[temp*16], hardDisk);
-		fprintf(hardDisk, "%d\n", memory[RR_PIDeviction*16]);
+		fprintf(hardDisk, "%d", memory[RR_PIDeviction*16]);
 		diskLen++;
 		for(i = 1; i < 16; i++){
 			//fwrite(&memory[RR_PIDeviction*16 + i], sizeof(char), 1, hardDisk);
 			//fputc(memory[temp*16 + i], hardDisk);
-			fprintf(hardDisk, "%d\n", memory[RR_PIDeviction*16 + i]);
+			fprintf(hardDisk, "%d", memory[RR_PIDeviction*16 + i]);
 			diskLen++;
 		}		
 		fclose(hardDisk);
@@ -143,7 +143,7 @@ void swapIn(int PID, int VPN, int openPFN, int isTable){
 		memory[hardwareReg[PID]*16 + (VPN*4 + 2)] = openPFN; // set the new pfn in the page table.
 			hardDisk = fopen("hardDisk.txt", "a+");
 
-			if(fseek(hardDisk, diskIndex, SEEK_SET) < 0){
+			if(fseek(hardDisk, diskIndex - 16, SEEK_SET) < 0){
 				puts("lseek failed");
 			}
 
@@ -182,17 +182,17 @@ void map(int PID, int VPN, int R_W){ // NEEDS FIXIN
 			hardDisk = fopen("hardDisk.txt", "a+");
 			ptOffset = VPN*4;
 			memory[hardwareReg[PID]*16 + ptOffset] = PID;//PID   
-			fprintf(hardDisk,"%d", memory[hardwareReg[PID]*16 + ptOffset]);
+			//fprintf(hardDisk,"%d", memory[hardwareReg[PID]*16 + ptOffset]);
 			ptOffset++;
 			memory[hardwareReg[PID]*16 + ptOffset] = VPN;
-			fprintf(hardDisk,"%d", memory[hardwareReg[PID]*16 + ptOffset]);
+			//fprintf(hardDisk,"%d", memory[hardwareReg[PID]*16 + ptOffset]);
 			ptOffset++;
 			memory[hardwareReg[PID]*16 + ptOffset] = openPFNPage;//PFN
-			fprintf(hardDisk,"%d", memory[hardwareReg[PID]*16 + ptOffset]);
+			//fprintf(hardDisk,"%d", memory[hardwareReg[PID]*16 + ptOffset]);
 			ptOffset++;
 			printf("ptOffest = %d\n",ptOffset);
 			memory[hardwareReg[PID]*16 + ptOffset] = R_W; //R/W bit
-			fprintf(hardDisk,"%d", memory[hardwareReg[PID]*16 + ptOffset]);
+			//fprintf(hardDisk,"%d", memory[hardwareReg[PID]*16 + ptOffset]);
 			fclose(hardDisk);
 			countPID[PID]++;
 			
@@ -220,16 +220,16 @@ void map(int PID, int VPN, int R_W){ // NEEDS FIXIN
 hardDisk = fopen("hardDisk.txt", "a+");
 			hardwareReg[PID] = openPFNTable;			
 			memory[hardwareReg[PID]*16] = PID;//PID
-			fprintf(hardDisk,"%d", memory[hardwareReg[PID]*16]);
+			//fprintf(hardDisk,"%d", memory[hardwareReg[PID]*16]);
 			printf("%d", memory[hardwareReg[PID]*16]);
 			memory[hardwareReg[PID]*16 + 1] = VPN;//VPN for page table
-			fprintf(hardDisk,"%d", memory[hardwareReg[PID]*16 + 1]);
+			//fprintf(hardDisk,"%d", memory[hardwareReg[PID]*16 + 1]);
 			printf("%d", memory[hardwareReg[PID]*16 + 1]);
 			memory[hardwareReg[PID]*16 + 2] = openPFNPage;//PFN
-			fprintf(hardDisk,"%d", memory[hardwareReg[PID]*16 + 2]);
+			//fprintf(hardDisk,"%d", memory[hardwareReg[PID]*16 + 2]);
 			printf("%d", memory[hardwareReg[PID]*16 + 3]);
 			memory[hardwareReg[PID]*16 + 3] = R_W; //R/W bit
-			fprintf(hardDisk,"%d", memory[hardwareReg[PID]*16 + 3]);
+			//fprintf(hardDisk,"%d", memory[hardwareReg[PID]*16 + 3]);
 			printf("%d", memory[hardwareReg[PID]*16 + 3]);
 printf("map set rw = %d\n", memory[hardwareReg[PID]*16 + 3]);
 			//memory[hardwareReg[PID]*16 + 6] = (-1);//
@@ -342,7 +342,7 @@ int load(int PID, int virt_addr){
 		puts("here1");
 		swapIn(PID, VPN, openPFNPage, 0); // swapping da page
 		value = memory[openPFNPage*16 + offset];
-		printf("The value %d is virtual address %d (physical address %d)\n", value, virt_addr, openPFNPage*16 + offset);
+		printf("The value %d is virtual address %d (physical address %d)\n", value - '0', virt_addr, openPFNPage*16 + offset);
 		return 0;
 	}
 	else if(memory[(hardwareReg[PID]*16) + VPN*4 + 2] > 3){
@@ -355,13 +355,13 @@ int load(int PID, int virt_addr){
 		puts("here2");
 		swapIn(PID, VPN, openPFNPage, 0); // swapping da page
 		value = memory[openPFNPage*16 + offset];
-		printf("The value %d is virtual address %d (physical address %d)\n", value, virt_addr, openPFNPage*16 + offset);
+		printf("The value %d is virtual address %d (physical address %d)\n", value - '0', virt_addr, openPFNPage*16 + offset);
 		return 0;
 	}else{
 		puts("here3");
 		PFN = memory[(hardwareReg[PID]*16) + VPN*4 + 2];
 		value = memory[PFN*16 + offset];
-		printf("The value %d is virtual address %d (physical address %d)\n", value, virt_addr, PFN*16 + offset);
+		printf("The value %d is virtual address %d (physical address %d)\n", value - '0', virt_addr, PFN*16 + offset);
 		return 0;
 	}
 	return 1;
