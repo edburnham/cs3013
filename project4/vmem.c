@@ -51,7 +51,7 @@ void swap(int PID) {// Done - untested
 	if (isPageTable){
 		temp = hardwareReg[temp2];
 		hardwareReg[temp2] = diskLen + 4; 
-		hardDisk = fopen("hardDisk.bin", "ab+");//evict full page table
+		hardDisk = fopen("hardDisk.txt", "a+");//evict full page table
 		fwrite(&memory[temp*16], sizeof(char), 1, hardDisk);//PID
 		diskLen++;
 		for(i = 1; i < 16; i++){
@@ -71,7 +71,7 @@ void swap(int PID) {// Done - untested
 			}
 		}
 		
-		hardDisk = fopen("hardDisk.bin", "ab+");
+		hardDisk = fopen("hardDisk.txt", "a+");
 		fwrite(&memory[RR_PIDeviction*16], sizeof(char), 1, hardDisk);//PID
 		diskLen++;
 		for(i = 1; i < 16; i++){
@@ -89,12 +89,11 @@ void swap(int PID) {// Done - untested
 
 void swapIn(int PID, int VPN, int openPFN, int isTable){
 	int diskIndex = 0;
-	int i;
-	char diskLines[16];
+	char diskLines[16] = {0};
 
 	if(isTable) { //It's a page table!
 		diskIndex = hardwareReg[PID] - 4;
-		hardDisk = fopen("hardDisk.bin", "rb");	
+		hardDisk = fopen("hardDisk.txt", "r");	
 		if(fseek(hardDisk, diskIndex, SEEK_SET) < 0){
 			puts("lseek failed");
 		}
@@ -108,20 +107,20 @@ void swapIn(int PID, int VPN, int openPFN, int isTable){
 	else { // it's just a page
 		diskIndex = memory[hardwareReg[PID]*16 + (VPN*4 + 2)] - 4; // grab the diskIndex of the page from the page table located in the PFN field
 		memory[hardwareReg[PID]*16 + (VPN*4 + 2)] = openPFN; // set the new pfn in the page table.
-		hardDisk = fopen("hardDisk.bin", "rb");
+		hardDisk = fopen("hardDisk.txt", "r");
 		
 		if(fseek(hardDisk, diskIndex, SEEK_SET) < 0){
 			puts("lseek failed");
 		}
 
-		for(i = 0; i < 16; i++){
-			if(fread(&diskLines[i], sizeof(char), 1, hardDisk) != 1){
-				puts("freqding");	
-			}
-			printf("%c", diskLines[i]);
-		}
+		//for(i = 0; i < 16; i++){
+			fread(diskLines, sizeof(char), 16, hardDisk);
+		//		puts("freqding");	
+		//	}
+			//printf("%c", diskLines[i]);
+		//}
 		
-		printf("lines: %s\n", diskLines);
+		//printf("lines: %s\n", diskLines);
 		memcpy(&memory[openPFN*16], &diskLines, sizeof(diskLines));
 		freeList[openPFN] = 1;
 		printf("Swapped disk offset %d into frame %d.\n", diskIndex, openPFN);		
