@@ -65,15 +65,20 @@ void swap(int PID) {// Done - untested
 		temp = hardwareReg[temp2];
 		hardwareReg[temp2] = diskLen + 4; 
 		hardDisk = fopen("hardDisk.txt", "a+");//evict full page table
-		fwrite(&memory[temp*16], sizeof(char), 1, hardDisk);//PID
+		//fwrite(&memory[temp*16], sizeof(char), 1, hardDisk);//PID
+		//fputc(memory[temp*16], hardDisk);
+		fprintf(hardDisk, "%c", memory[temp*16]);
 		diskLen++;
 		for(i = 1; i < 16; i++){
-			fwrite(&memory[temp*16 + i], sizeof(char), 1, hardDisk);
+			//fwrite(&memory[temp*16 + i], sizeof(char), 1, hardDisk);
+			//fputc(memory[temp*16 + i], hardDisk);
+			fprintf(hardDisk, "%c", memory[temp*16 + i]);
 			diskLen++;
 		}		
 		fclose(hardDisk);
 		printf("Swapped frame %u to disk at offset %d\n", RR_PIDeviction, diskLen - 16);
 		freeList[PID] = 0;
+		isPageTable = 0;
 	}
 	else{
 		for(i = 0; i < 4; i++){
@@ -85,10 +90,14 @@ void swap(int PID) {// Done - untested
 		}
 		
 		hardDisk = fopen("hardDisk.txt", "a+");
-		fwrite(&memory[RR_PIDeviction*16], sizeof(char), 1, hardDisk);//PID
+		//fwrite(&memory[RR_PIDeviction*16], sizeof(char), 1, hardDisk);//PID
+		//fputc(memory[temp*16], hardDisk);
+		fprintf(hardDisk, "%c", memory[temp*16]);
 		diskLen++;
 		for(i = 1; i < 16; i++){
-			fwrite(&memory[RR_PIDeviction*16 + i], sizeof(char), 1, hardDisk);
+			//fwrite(&memory[RR_PIDeviction*16 + i], sizeof(char), 1, hardDisk);
+			//fputc(memory[temp*16 + i], hardDisk);
+			fprintf(hardDisk, "%c", memory[temp*16 + i]);
 			diskLen++;
 		}		
 		fclose(hardDisk);
@@ -158,16 +167,23 @@ void map(int PID, int VPN, int R_W){ // NEEDS FIXIN
 				swap(PID);
 				openPFNPage = checkFreeList();
 			}	
+			hardDisk = fopen("hardDisk.txt", "a+");
 			ptOffset = VPN*4;
-			memory[hardwareReg[PID]*16 + ptOffset] = (char)PID;//PID    
+			memory[hardwareReg[PID]*16 + ptOffset] = (char)PID;//PID   
+			fprintf(hardDisk,"%c", memory[hardwareReg[PID]*16 + ptOffset]);
 			ptOffset++;
 			memory[hardwareReg[PID]*16 + ptOffset] = (char)VPN;
+			fprintf(hardDisk,"%c", memory[hardwareReg[PID]*16 + ptOffset]);
 			ptOffset++;
 			memory[hardwareReg[PID]*16 + ptOffset] = (char)openPFNPage;//PFN
+			fprintf(hardDisk,"%c", memory[hardwareReg[PID]*16 + ptOffset]);
 			ptOffset++;
 			printf("ptOffest = %d\n",ptOffset);
 			memory[hardwareReg[PID]*16 + ptOffset] = (char)R_W; //R/W bit
+			fprintf(hardDisk,"%c", memory[hardwareReg[PID]*16 + ptOffset]);
+			fclose(hardDisk);
 			countPID[PID]++;
+			
 			printf("Mapped virtual address %d (page %d) into physical frame %d\n", atoi(virt_addr), VPN, openPFNPage);
 		}
 		else {
@@ -189,17 +205,21 @@ void map(int PID, int VPN, int R_W){ // NEEDS FIXIN
 				swap(PID);
 				openPFNPage = checkFreeList();
 			}
-
+hardDisk = fopen("hardDisk.txt", "w+");
 			hardwareReg[PID] = openPFNTable;			
 			memory[hardwareReg[PID]*16] = (char)PID;//PID
+			fprintf(hardDisk,"%c", memory[hardwareReg[PID]*16]);
 			memory[hardwareReg[PID]*16 + 1] = (char)VPN;//VPN for page table
+			fprintf(hardDisk,"%c", memory[hardwareReg[PID]*16 + 1]);
 			memory[hardwareReg[PID]*16 + 2] = (char)openPFNPage;//PFN
+			fprintf(hardDisk,"%c", memory[hardwareReg[PID]*16 + 2]);
 			memory[hardwareReg[PID]*16 + 3] = (char)R_W; //R/W bit
+			fprintf(hardDisk,"%c", memory[hardwareReg[PID]*16 + 3]);
 printf("map set rw = %d\n", memory[hardwareReg[PID]*16 + 3]);
 			memory[hardwareReg[PID]*16 + 6] = (char)(-1);//
 			memory[hardwareReg[PID]*16 + 10] = (char)(-1);//
 			memory[hardwareReg[PID]*16 + 14] = (char)(-1);//
-
+fclose(hardDisk);
 			countPID[PID]++;
 			printf("Put page table for PID %d into physical frame %d\n", PID, openPFNTable);
 			printf("Mapped virtual address %d (page %d) into physical frame %d\n", atoi(virt_addr), VPN, openPFNPage);
