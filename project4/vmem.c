@@ -45,12 +45,6 @@ void swap(int PID) {// Done - untested
 		if (hardwareReg[i] == RR_PIDeviction && i != PID){
 			isPageTable = 1;
 			temp2 = i;
-			for(i = 0; i < 4; i++){
-				if (memory[hardwareReg[PID]*16 + (4*i+2)] < 4){
-					RR_PIDeviction = memory[hardwareReg[PID]*16 + (4*i+2)];
-					break;
-				}
-			}
 			break;
 		}
 	}
@@ -63,10 +57,9 @@ void swap(int PID) {// Done - untested
 		diskLen++;
 		for(i = 1; i < 16; i++){
 			fwrite(&memory[temp*16 + i], sizeof(char), 1, hardDisk);
-			diskLen++;
 		}		
 		fclose(hardDisk);
-		printf("Swapped frame %u to disk at offset %d\n", RR_PIDeviction, diskLen - 16);
+		printf("Swapped frame %u to disk at offset %d\n", RR_PIDeviction, diskLen*16 - 16);
 		freeList[PID] = 0;
 		isPageTable = 0;
 	}
@@ -74,7 +67,7 @@ void swap(int PID) {// Done - untested
 		for(i = 0; i < 4; i++){
 			for(j = 0; j < 4; j++){
 				if(memory[hardwareReg[i]*16 + (4*j + 2)] == RR_PIDeviction){
-					memory[hardwareReg[i]*16 + (4*j + 2)] = diskLen + 20;
+					memory[hardwareReg[i]*16 + (4*j + 2)] = diskLen + 5;
 					break;
 				}
 			}
@@ -85,10 +78,9 @@ void swap(int PID) {// Done - untested
 		diskLen++;
 		for(i = 1; i < 16; i++){
 			fwrite(&memory[RR_PIDeviction*16 + i], sizeof(char), 1, hardDisk);
-			diskLen++;
 		}		
 		fclose(hardDisk);
-		printf("Swapped frame %u to disk at offset %d\n", RR_PIDeviction, diskLen - 16);
+		printf("Swapped frame %u to disk at offset %d\n", RR_PIDeviction, diskLen*16 - 16);
 		freeList[RR_PIDeviction] = 0;
 	}
 	if(++RR_PIDeviction == 4){
@@ -103,7 +95,7 @@ void swapIn(int PID, int VPN, int openPFN, int isTable){
 	if(isTable) { //It's a page table!
 		diskIndex = hardwareReg[PID] - 4;
 		hardDisk = fopen("hardDisk.txt", "ab+");	
-		if(fseek(hardDisk, diskIndex, SEEK_SET) < 0){
+		if(fseek(hardDisk, diskIndex*16, SEEK_SET) < 0){
 			puts("fseek failed!");
 		}
 		fread(&diskLines, sizeof(char), 16, hardDisk);
@@ -119,7 +111,7 @@ void swapIn(int PID, int VPN, int openPFN, int isTable){
 		memory[hardwareReg[PID]*16 + (VPN*4 + 2)] = openPFN; // set the new pfn in the page table.
 		hardDisk = fopen("hardDisk.txt", "ab+");
 
-		if(fseek(hardDisk, diskIndex - 16, SEEK_SET) < 0){
+		if(fseek(hardDisk, diskIndex*16 - 16, SEEK_SET) < 0){
 			puts("fseek failed!");
 		}
 
@@ -127,7 +119,7 @@ void swapIn(int PID, int VPN, int openPFN, int isTable){
 
 		memcpy(&memory[openPFN*16], &diskLines, sizeof(diskLines));
 		freeList[openPFN] = 1;
-		printf("Swapped disk offset %d into frame %d\n", diskIndex, openPFN);		
+		printf("Swapped disk offset %d into frame %d\n", diskIndex*16, openPFN);		
 		fclose(hardDisk);
 	}
 }
