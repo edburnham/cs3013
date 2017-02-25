@@ -9,7 +9,7 @@
 
 #define SIZE 64
 
-char memory[SIZE];
+unsigned char memory[SIZE];
 
 char pid[1];
 char instr_type[6];
@@ -192,7 +192,7 @@ void map(int PID, int VPN, int R_W){ // NEEDS FIXIN
 
 int store(int PID, int virt_addr, int val){ // NEEDS FIXIN
 	int VPN = virt_addr/16;
-	int offset = virt_addr - VPN*16;
+	int offset = virt_addr - VPN*16; 
 	int PFN = 0;
 	int R_W = 0;
 
@@ -215,7 +215,7 @@ int store(int PID, int virt_addr, int val){ // NEEDS FIXIN
 		R_W = memory[openPFNPage*16 + VPN*4 + 3];
 		if(R_W == 0){
 			puts("Error: writes are not allowed to this page");
-			return -1;
+			return 1;
 		}else{
 			memory[PFN*16 + offset] = val;//store
 			printf("Stored value %d at virtual address %d (physical address %d)\n", val, virt_addr, PFN*16 + offset);
@@ -235,7 +235,7 @@ int store(int PID, int virt_addr, int val){ // NEEDS FIXIN
 		R_W = memory[openPFNPage*16 + VPN*4 + 3];
 		if(R_W == 0){
 			puts("Error: writes are not allowed to this page");
-			return -1;
+			return 1;
 		}else{
 			memory[PFN*16 + offset] = val;//store
 			printf("Stored value %d at virtual address %d (physical address %d)\n", val, virt_addr, PFN*16 + offset);
@@ -395,15 +395,23 @@ int main(void){
 							PID = atoi(pid);
 							address = atoi(virt_addr);
 							val = atoi(value);
-							store(PID, address, val);
+							if(vFreeList[PID][address/16] == 0){
+								puts("Address space has not been mapped!");
+							}else{
+								store(PID, address, val);
+							}
 						}
 
 					}else if(type == 3){
 						/*load*/
 						PID = atoi(pid);
 						address = atoi(virt_addr);
-						if(load(PID, address) != 0){
-							puts("load Failed!");	
+						if(vFreeList[PID][address/16] == 0){
+							puts("Address space has not been mapped!");
+						}else{
+							if(load(PID, address) != 0){
+								puts("load Failed!");	
+							}
 						}
 					}
 					next++;
